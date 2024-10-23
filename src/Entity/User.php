@@ -4,10 +4,17 @@ namespace App\Entity;
 
 use App\Repository\UserRepository;
 use Doctrine\ORM\Mapping as ORM;
+// use Scheb\TwoFactorBundle\Model\Google\TwoFactorInterface;
 
 #[ORM\Entity(repositoryClass: UserRepository::class)]
-class User
+class User 
+// implements TwoFactorInterface
 {
+    // /**
+    //  * @ORM\Column(type="string", nullable=true)
+    //  */
+    // private ?string $googleAuthenticatorSecret;
+
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column]
@@ -107,4 +114,24 @@ class User
 
         return $this;
     }
+
+    // public function isGoogleAuthenticatorEnabled(): bool
+    // {
+    //     return null !== $this->googleAuthenticatorSecret;
+    // }
+
+    // public function getGoogleAuthenticatorUsername(): string
+    // {
+    //     return $this->first_name;
+    // }
+
+    // public function getGoogleAuthenticatorSecret(): ?string
+    // {
+    //     return $this->googleAuthenticatorSecret;
+    // }
+
+    // public function setGoogleAuthenticatorSecret(?string $googleAuthenticatorSecret): void
+    // {
+    //     $this->googleAuthenticatorSecret = $googleAuthenticatorSecret;
+    // }
 }
