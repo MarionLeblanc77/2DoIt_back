@@ -50,7 +50,7 @@ class TaskController extends AbstractController
         $em->persist($task);
         $em->flush();
 
-        return $this->json(['success' => 'Item added successfully.'], 200);
+        return $this->json(['success' => 'Task added successfully.'], 200);
     }
 
     #[Route('/task/{id}', name: 'edit', methods: "PUT")]
@@ -63,6 +63,12 @@ class TaskController extends AbstractController
         TaskRepository $taskRepository) : JsonResponse
     {
         $task = $taskRepository->find($id);
+
+        if (!$task) {
+            throw $this->createNotFoundException(
+                'No task found for id '.$id
+            );
+        }
 
         $updatedTask = $serializer->deserialize($request->getContent(), type: Task::class, format: 'json', context: [AbstractNormalizer::OBJECT_TO_POPULATE => $task]);
 
