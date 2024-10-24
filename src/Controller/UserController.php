@@ -6,44 +6,99 @@ use App\Entity\User;
 use App\Repository\UserRepository;
 use DateTimeImmutable;
 use Doctrine\ORM\EntityManagerInterface;
+use Lexik\Bundle\JWTAuthenticationBundle\Services\JWTTokenManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
 use Symfony\Component\Serializer\SerializerInterface;
 use Symfony\Component\Routing\Attribute\Route;
+use Symfony\Component\Security\Core\User\UserProviderInterface;
 use Symfony\Component\Serializer\Normalizer\AbstractNormalizer;
+use Symfony\Component\Serializer\Normalizer\AbstractObjectNormalizer;
 use Symfony\Component\Validator\Validator\ValidatorInterface;
 
 #[Route('/api', name: 'api_user_')]
 class UserController extends AbstractController
 {
-    #[Route('/user', name: 'add', methods: "POST")]
-    public function add(
-        EntityManagerInterface $em, 
-        Request $request, 
-        SerializerInterface $serializer, 
-        ValidatorInterface $validator) :JsonResponse
-    {
+    #[Route('/register', name: 'register', methods: "POST")]
+    public function register(
+        UserRepository $userRepository,
+        EntityManagerInterface $em,
+        Request $request,
+        SerializerInterface $serializer,
+        ValidatorInterface $validator,
+        UserPasswordHasherInterface $passwordHasher
+    ): JsonResponse {
+
         $json = $request->getContent();
-        $user = $serializer->deserialize(data: $json, type: User::class, format: 'json');
+
+        $user = $serializer->deserialize($json, User::class, 'json', [AbstractObjectNormalizer::SKIP_NULL_VALUES => true]);
         
-        $user->setCreatedAt(new DateTimeImmutable());
-        
+        if ($userRepository->findOneBy(['email' => $user->getEmail()])) {
+            return $this->json(['errors' => 'A user with this email already exists.'], JsonResponse::HTTP_CONFLICT);
+        }
         $errorReadable = [];
-        $errors = $validator->validate($user);
-        foreach ($errors as $currentError) {
-            $errorReadable[] = $currentError->getMessage();
-        }
 
-        if (count($errorReadable) > 0) {
-            return $this->json(['errors' => $errorReadable], status: Response::HTTP_BAD_REQUEST);
-        }
+        $password = $user->getPassword();
+        // if (strlen($password) < 12) {
+        //     $errorReadable[]= 'The password must contains 12 caracters.';
+        // }
 
+        // if (!preg_match('/[A-Z]/', $password)) {
+        //     $errorReadable[]= 'The password must contains an uppercase caracter.';
+        // }
+
+        // if (!preg_match('/[\W]/', $password)) {
+        //     $errorReadable[]= 'The password must contains a special caracter.';
+        // }
+        
+        $user->setPassword($passwordHasher->hashPassword($user, $password));
+        $user->setCreatedAt(new \DateTimeImmutable());
+        $user->setRoles(['ROLE_USER']);
+
+        // $errors = $validator->validate($user);
+
+        // foreach ($errors as $currentError) {
+        //     $errorReadable[] = $currentError->getMessage();
+        // }
+        // if (count($errorReadable) > 0) {
+        //     return $this->json(['errors' => $errorReadable], status: Response::HTTP_BAD_REQUEST);
+        // }
+
+        // mettre à jour
         $em->persist($user);
         $em->flush();
 
-        return $this->json(['success' => 'User added successfully.'], 200);
+        return $this->json(['success' => 'New account created'], 200);
+    }
+
+    #[Route('/login', name: 'login', methods: "POST")]
+    public function login( Request $request, UserProviderInterface $userProvider, JWTTokenManagerInterface $jwtManager, UserPasswordHasherInterface $passwordHasher): JsonResponse
+    {
+        $data = json_decode($request->getContent(), true);
+
+        $email = $data['email'];
+        $password = $data['password'];
+
+        if (!$email || !$password) {
+            return $this->json(['errors' => 'Both email and password are required'], JsonResponse::HTTP_BAD_REQUEST);
+        }
+
+        if(!$userProvider->loadUserByIdentifier($email)){
+            return $this->json(['errors' => 'Email and password do not match'], JsonResponse::HTTP_UNAUTHORIZED);
+        }
+        /** @var User */
+        $user = $userProvider->loadUserByIdentifier($email);
+
+        if (!$user || !$passwordHasher->isPasswordValid($user, $password)) {
+            return $this->json(['errors' => 'Email and password do not match'], JsonResponse::HTTP_UNAUTHORIZED);
+        }
+
+        $token = $jwtManager->create($user);
+
+        return $this->json(['user' => $user, 'token' => $token], 200, context: ["groups" => ["user_read"]]);
     }
 
     #[Route('/user/{id}', name: 'edit', methods: "PUT")]
