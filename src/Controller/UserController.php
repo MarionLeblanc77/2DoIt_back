@@ -28,7 +28,7 @@ class UserController extends AbstractController
         EntityManagerInterface $em,
         Request $request,
         SerializerInterface $serializer,
-        ValidatorInterface $validator,
+        // ValidatorInterface $validator,
         UserPasswordHasherInterface $passwordHasher
     ): JsonResponse {
 
@@ -39,7 +39,7 @@ class UserController extends AbstractController
         if ($userRepository->findOneBy(['email' => $user->getEmail()])) {
             return $this->json(['errors' => 'A user with this email already exists.'], JsonResponse::HTTP_CONFLICT);
         }
-        $errorReadable = [];
+        // $errorReadable = [];
 
         $password = $user->getPassword();
         // if (strlen($password) < 12) {

@@ -3,7 +3,9 @@
 namespace App\Controller;
 
 use App\Entity\Task;
+use App\Entity\User;
 use App\Repository\TaskRepository;
+use App\Repository\UserRepository;
 use DateTimeImmutable;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -12,6 +14,7 @@ use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Serializer\SerializerInterface;
 use Symfony\Component\Routing\Attribute\Route;
+use Symfony\Component\Security\Core\Authentication\Token\Storage\TokenStorageInterface;
 use Symfony\Component\Serializer\Normalizer\AbstractNormalizer;
 use Symfony\Component\Validator\Validator\ValidatorInterface;
 
@@ -23,6 +26,15 @@ class TaskController extends AbstractController
     {
         $tasks = $taskRepository->findAll();
         return $this->json($tasks, Response::HTTP_OK);
+    }
+
+    #[Route('/usertasks', name: 'user_browse', methods: "GET")]
+    public function browseUser(TokenStorageInterface $tokenStorage): Response
+    {
+        $token = $tokenStorage->getToken();
+        $user = $token->getUser();
+        $tasks = $user->getTasks();
+        return $this->json($tasks, 200, context:["groups" => ["user_read"]]);
     }
 
     #[Route('/task', name: 'add', methods: "POST")]
