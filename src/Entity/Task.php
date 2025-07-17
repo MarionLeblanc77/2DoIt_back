@@ -6,6 +6,7 @@ use App\Repository\TaskRepository;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\Mapping as ORM;
+use Symfony\Component\Serializer\Attribute\Groups as AttributeGroups;
 
 #[ORM\Entity(repositoryClass: TaskRepository::class)]
 class Task
@@ -13,27 +14,33 @@ class Task
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column]
+    #[AttributeGroups(['task_read'])]
     private ?int $id = null;
 
     #[ORM\Column(length: 255)]
+    #[AttributeGroups(['task_read'])]
     private ?string $content = null;
 
     #[ORM\Column]
+    #[AttributeGroups(['task_read'])]
     private ?\DateTimeImmutable $created_at = null;
 
     #[ORM\Column(nullable: true)]
+    #[AttributeGroups(['task_read'])]
     private ?\DateTimeImmutable $updated_at = null;
 
     /**
      * @var Collection<int, Category>
      */
     #[ORM\ManyToMany(targetEntity: Category::class, inversedBy: 'tasks')]
+    #[AttributeGroups(['task_read', 'task_categories'])]
     private Collection $categories;
 
     /**
      * @var Collection<int, User>
      */
     #[ORM\ManyToMany(targetEntity: User::class, inversedBy: 'tasks')]
+    #[AttributeGroups(['task_read','task_users'])]
     private Collection $users;
 
     public function __construct()
@@ -110,7 +117,7 @@ class Task
     /**
      * @return Collection<int, User>
      */
-    public function getUser(): Collection
+    public function getUsers(): Collection
     {
         return $this->users;
     }
@@ -118,7 +125,8 @@ class Task
     public function addUser(User $user): static
     {
         if (!$this->users->contains($user)) {
-            $this->users->add($user);
+            $this->users[] = $user;
+            $user->addTask($this);
         }
 
         return $this;
@@ -126,7 +134,9 @@ class Task
 
     public function removeUser(User $user): static
     {
-        $this->users->removeElement($user);
+        if($this->users->removeElement($user)) {
+            $user->removeTask($this);
+        }
 
         return $this;
     }

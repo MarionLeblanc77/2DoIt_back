@@ -25,7 +25,7 @@ class TaskController extends AbstractController
     public function browse(TaskRepository $taskRepository): Response
     {
         $tasks = $taskRepository->findAll();
-        return $this->json($tasks, Response::HTTP_OK);
+        return $this->json($tasks, Response::HTTP_OK, [], ["groups" => ["task_read"]]);
     }
 
     #[Route('/usertasks', name: 'user_browse', methods: "GET")]
@@ -34,7 +34,7 @@ class TaskController extends AbstractController
         $token = $tokenStorage->getToken();
         $user = $token->getUser();
         $tasks = $user->getTasks();
-        return $this->json($tasks, 200, context:["groups" => ["user_read"]]);
+        return $this->json($tasks, 200);
     }
 
     #[Route('/task', name: 'add', methods: "POST")]
@@ -42,12 +42,29 @@ class TaskController extends AbstractController
         EntityManagerInterface $em, 
         Request $request, 
         SerializerInterface $serializer, 
-        ValidatorInterface $validator) :JsonResponse 
+        ValidatorInterface $validator,
+        UserRepository $userRepository) :JsonResponse
+
     {
         $json = $request->getContent();
+        $data = json_decode($json, true);
+        
         $task = $serializer->deserialize(data: $json, type: Task::class, format: 'json');
         
         $task->setCreatedAt(new DateTimeImmutable());
+        
+        if (isset($data['users']) && is_array($data['users'])) {
+            foreach ($data['users'] as $userId) {
+                $user = $userRepository->find($userId);
+                    if ($user) {
+                        $task->addUser($user);
+                        $user->addTask($task);
+                        $em->persist($user);
+                    } else {
+                    return $this->json(['error' => 'User not found.'], Response::HTTP_NOT_FOUND);
+                }
+            }
+        }        
         
         $errorReadable = [];
         $errors = $validator->validate($task);

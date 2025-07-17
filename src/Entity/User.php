@@ -18,7 +18,7 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column]
-    #[AttributeGroups(['user_read'])]
+    #[AttributeGroups(['user_read', 'task_read'])]
     private ?int $id = null;
 
     #[ORM\Column(length: 255)]
@@ -39,11 +39,11 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     private ?string $password = null;
 
     #[ORM\Column(length: 255)]
-    #[AttributeGroups(['user_read'])]
+    #[AttributeGroups(['user_read', 'task_read'])]
     private ?string $first_name = null;
 
     #[ORM\Column(length: 255)]
-    #[AttributeGroups(['user_read'])]
+    #[AttributeGroups(['user_read', 'task_read'])]
     private ?string $last_name = null;
 
     #[ORM\Column]
@@ -58,7 +58,6 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
      * @var Collection<int, Task>
      */
     #[ORM\ManyToMany(targetEntity: Task::class, mappedBy: 'users')]
-    #[AttributeGroups(['task_browse'])]
     private Collection $tasks;
 
     public function __construct()
@@ -200,8 +199,7 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     public function addTask(Task $task): static
     {
         if (!$this->tasks->contains($task)) {
-            $this->tasks->add($task);
-            $task->addUser($this);
+            $this->tasks[] = $task;
         }
 
         return $this;
@@ -210,7 +208,6 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     public function removeTask(Task $task): static
     {
         if ($this->tasks->removeElement($task)) {
-            $task->removeUser($this);
         }
 
         return $this;
