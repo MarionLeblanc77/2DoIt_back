@@ -18,15 +18,18 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column]
+    #[AttributeGroups(['user_read'])]
     private ?int $id = null;
 
     #[ORM\Column(length: 255)]
+    #[AttributeGroups(['user_read'])]
     private ?string $email = null;
 
     /**
      * @var list<string> The user roles
      */
     #[ORM\Column]
+    #[AttributeGroups(['user_read'])]
     private array $roles = [];
 
     /**
@@ -36,21 +39,25 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     private ?string $password = null;
 
     #[ORM\Column(length: 255)]
+    #[AttributeGroups(['user_read'])]
     private ?string $first_name = null;
 
     #[ORM\Column(length: 255)]
+    #[AttributeGroups(['user_read'])]
     private ?string $last_name = null;
 
     #[ORM\Column]
+    #[AttributeGroups(['user_read'])]
     private ?\DateTimeImmutable $created_at = null;
 
     #[ORM\Column(nullable: true)]
+    #[AttributeGroups(['user_read'])]
     private ?\DateTimeImmutable $updated_at = null;
 
     /**
      * @var Collection<int, Task>
      */
-    #[ORM\ManyToMany(targetEntity: Task::class, mappedBy: 'user')]
+    #[ORM\ManyToMany(targetEntity: Task::class, mappedBy: 'users')]
     #[AttributeGroups(['task_browse'])]
     private Collection $tasks;
 

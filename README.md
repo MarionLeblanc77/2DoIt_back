@@ -23,3 +23,14 @@ After a change in the entities, affecting the database, run:
 bin/console make:migration
 bin/console doctrine:migrations:migrate
 ```
+
+#### DEBUG (to fix)
+
+Issue with cache access :
+```PowerShell
+Remove-Item -Recurse -Force var\cache
+```
+```bash
+php bin/console cache:clear --env=dev
+php bin/console cache:warmup --env=dev
+```
