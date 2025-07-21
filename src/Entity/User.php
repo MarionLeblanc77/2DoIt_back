@@ -6,6 +6,7 @@ use App\Repository\UserRepository;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\Mapping as ORM;
+use Doctrine\ORM\Mapping\JoinTable;
 use Symfony\Component\Serializer\Attribute\Groups as AttributeGroups;
 use Symfony\Component\Security\Core\User\PasswordAuthenticatedUserInterface;
 use Symfony\Component\Security\Core\User\UserInterface;
@@ -57,12 +58,21 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     /**
      * @var Collection<int, Task>
      */
-    #[ORM\ManyToMany(targetEntity: Task::class, mappedBy: 'users')]
+    #[ORM\ManyToMany(targetEntity: Task::class, mappedBy: 'users', cascade: ['persist'])]
+    #[JoinTable(name:'task_user')]
     private Collection $tasks;
+
+    /**
+     * @var Collection<int, Section>
+     */
+    #[ORM\OneToMany(targetEntity: Section::class, mappedBy: 'user', orphanRemoval: true)]
+    private Collection $sections;
 
     public function __construct()
     {
+        $this->created_at = new \DateTimeImmutable();
         $this->tasks = new ArrayCollection();
+        $this->sections = new ArrayCollection();
     }
 
     public function getId(): ?int
@@ -196,18 +206,48 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
         return $this->tasks;
     }
 
-    public function addTask(Task $task): static
+    public function addTask(Task $task): self
     {
-        if (!$this->tasks->contains($task)) {
-            $this->tasks[] = $task;
+        if(!$this->tasks->contains($task)) {
+           $this->tasks->add($task);
+           $task->addUser($this);
+        }
+        return $this;    
+    }
+
+    public function removeTask(Task $task): self
+    {
+        if ($this->tasks->removeElement($task)) {
+            $task->removeUser($this);
+        }
+        return $this;
+    }
+
+    /**
+     * @return Collection<int, Section>
+     */
+    public function getSections(): Collection
+    {
+        return $this->sections;
+    }
+
+    public function addSection(Section $section): static
+    {
+        if (!$this->sections->contains($section)) {
+            $this->sections->add($section);
+            $section->setUser($this);
         }
 
         return $this;
     }
 
-    public function removeTask(Task $task): static
+    public function removeSection(Section $section): static
     {
-        if ($this->tasks->removeElement($task)) {
+        if ($this->sections->removeElement($section)) {
+            // set the owning side to null (unless already changed)
+            if ($section->getUser() === $this) {
+                $section->setUser(null);
+            }
         }
 
         return $this;

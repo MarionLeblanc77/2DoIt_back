@@ -6,9 +6,11 @@ use App\Repository\TaskRepository;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\Mapping as ORM;
+use Doctrine\ORM\Mapping\JoinTable;
 use Symfony\Component\Serializer\Attribute\Groups as AttributeGroups;
 
 #[ORM\Entity(repositoryClass: TaskRepository::class)]
+#[ORM\Table(name: '`task`')]
 class Task
 {
     #[ORM\Id]
@@ -30,22 +32,20 @@ class Task
     private ?\DateTimeImmutable $updated_at = null;
 
     /**
-     * @var Collection<int, Category>
-     */
-    #[ORM\ManyToMany(targetEntity: Category::class, inversedBy: 'tasks')]
-    #[AttributeGroups(['task_read', 'task_categories'])]
-    private Collection $categories;
-
-    /**
      * @var Collection<int, User>
      */
-    #[ORM\ManyToMany(targetEntity: User::class, inversedBy: 'tasks')]
+    #[ORM\ManyToMany(targetEntity: User::class, inversedBy: 'tasks', cascade: ['persist'])]
+    #[JoinTable(name:'task_user')]
     #[AttributeGroups(['task_read','task_users'])]
     private Collection $users;
 
+    #[ORM\ManyToOne(inversedBy: 'tasks')]
+    #[ORM\JoinColumn(nullable: false)]
+    private ?Section $section = null;
+
     public function __construct()
     {
-        $this->categories = new ArrayCollection();
+        $this->created_at = new \DateTimeImmutable();
         $this->users = new ArrayCollection();
     }
 
@@ -91,30 +91,6 @@ class Task
     }
 
     /**
-     * @return Collection<int, Category>
-     */
-    public function getCategory(): Collection
-    {
-        return $this->categories;
-    }
-
-    public function addCategory(Category $categories): static
-    {
-        if (!$this->categories->contains($categories)) {
-            $this->categories->add($categories);
-        }
-
-        return $this;
-    }
-
-    public function removeCategory(Category $categories): static
-    {
-        $this->categories->removeElement($categories);
-
-        return $this;
-    }
-
-    /**
      * @return Collection<int, User>
      */
     public function getUsers(): Collection
@@ -122,21 +98,28 @@ class Task
         return $this->users;
     }
 
-    public function addUser(User $user): static
+    public function addUser(User $user): self
     {
-        if (!$this->users->contains($user)) {
-            $this->users[] = $user;
-            $user->addTask($this);
+        if(!$this->users->contains($user)) {
+           $this->users->add($user);
         }
-
         return $this;
     }
 
-    public function removeUser(User $user): static
+    public function removeUser(User $user): self
     {
-        if($this->users->removeElement($user)) {
-            $user->removeTask($this);
-        }
+        $this->users->removeElement($user);
+        return $this;
+    }
+
+    public function getSection(): ?Section
+    {
+        return $this->section;
+    }
+
+    public function setSection(?Section $section): static
+    {
+        $this->section = $section;
 
         return $this;
     }

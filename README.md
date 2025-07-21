@@ -20,6 +20,7 @@ symfony server:start
 
 After a change in the entities, affecting the database, run:
 ```bash
+(optional, to check the current mappings for valid forward and reverse mappings ) bin/console doctrine:schema:validate
 bin/console make:migration
 bin/console doctrine:migrations:migrate
 ```

@@ -56,7 +56,6 @@ class UserController extends AbstractController
         // }
         
         $user->setPassword($passwordHasher->hashPassword($user, $password));
-        $user->setCreatedAt(new \DateTimeImmutable());
         $user->setRoles(['ROLE_USER']);
 
         // $errors = $validator->validate($user);
@@ -110,23 +109,14 @@ class UserController extends AbstractController
         return $this->json($users, Response::HTTP_OK, [], ["groups" => ["user_read"]]);
     }
 
-    #[Route('/user/{id}', name: 'edit', methods: "PUT")]
+    #[Route('/user/{id<\d+>}', name: 'edit', methods: "PUT")]
     public function edit(
-        int $id,
         EntityManagerInterface $em, 
         Request $request, 
         SerializerInterface $serializer, 
         ValidatorInterface $validator,
-        UserRepository $userRepository) : JsonResponse
+        User $user) : JsonResponse
     {
-        $user = $userRepository->find($id);
-
-        if (!$user) {
-            throw $this->createNotFoundException(
-                'No user found for id '.$id
-            );
-        }
-
         $updatedUser = $serializer->deserialize($request->getContent(), type: User::class, format: 'json', context: [AbstractNormalizer::OBJECT_TO_POPULATE => $user]);
 
         $updatedUser->setUpdatedAt(new DateTimeImmutable());
@@ -147,11 +137,9 @@ class UserController extends AbstractController
         return $this->json(['success' => 'User modified successfully.'], 200);
     }
 
-    #[Route('/user/{id}', name: 'delete', methods: "DELETE")]
-    public function delete(int $id, UserRepository $userRepository, EntityManagerInterface $em): JsonResponse
-    {
-        $user = $userRepository->find($id);
-        
+    #[Route('/user/{id<\d+>}', name: 'delete', methods: "DELETE")]
+    public function delete(User $user, EntityManagerInterface $em): JsonResponse
+    {       
         if (!$user) {
             return $this->json(['errors' => 'User not found'], 404);
         }

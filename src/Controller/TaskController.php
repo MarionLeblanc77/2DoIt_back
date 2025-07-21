@@ -50,17 +50,15 @@ class TaskController extends AbstractController
         $data = json_decode($json, true);
         
         $task = $serializer->deserialize(data: $json, type: Task::class, format: 'json');
-        
-        $task->setCreatedAt(new DateTimeImmutable());
-        
-        if (isset($data['users']) && is_array($data['users'])) {
-            foreach ($data['users'] as $userId) {
+                
+        if (isset($data['owners']) && is_array($data['owners'])) {
+            foreach ($data['owners'] as $userId) {
                 $user = $userRepository->find($userId);
-                    if ($user) {
-                        $task->addUser($user);
-                        $user->addTask($task);
-                        $em->persist($user);
-                    } else {
+                if ($user) {
+                    $task->addUser($user);     
+                    $user->addTask($task);
+                    $em->persist($user);                  
+                } else {
                     return $this->json(['error' => 'User not found.'], Response::HTTP_NOT_FOUND);
                 }
             }
@@ -82,26 +80,40 @@ class TaskController extends AbstractController
         return $this->json(['success' => 'Task added successfully.'], 200);
     }
 
-    #[Route('/task/{id}', name: 'edit', methods: "PUT")]
+    #[Route('/task/{id<\d+>}', name: 'edit', methods: "PUT")]
     public function edit(
-        int $id,
         EntityManagerInterface $em, 
         Request $request, 
         SerializerInterface $serializer, 
         ValidatorInterface $validator,
-        TaskRepository $taskRepository) : JsonResponse
+        Task $task,
+        UserRepository $userRepository) : JsonResponse
     {
-        $task = $taskRepository->find($id);
-
-        if (!$task) {
-            throw $this->createNotFoundException(
-                'No task found for id '.$id
-            );
-        }
+        $json = $request->getContent();
+        $data = json_decode($json, true);
 
         $updatedTask = $serializer->deserialize($request->getContent(), type: Task::class, format: 'json', context: [AbstractNormalizer::OBJECT_TO_POPULATE => $task]);
 
         $updatedTask->setUpdatedAt(new DateTimeImmutable());
+
+        if (isset($data['users']) && is_array($data['users'])) {
+            foreach ($data['users'] as $userId) {
+                $user = $userRepository->find($userId);
+                    if ($user) {
+                        $updatedTask->addUser($user);
+                        $em->persist($user);
+                    } else {
+                    return $this->json(['error' => 'User not found.'], Response::HTTP_NOT_FOUND);
+                }
+            }
+            foreach ($task->getUsers() as $user) {
+                $userId = $user->getId();
+                if (!in_array($userId, $data['users'])) {
+                    $updatedTask->removeUser($user);
+                    $em->persist($user);
+                }
+            }
+        } 
 
         $errors = $validator->validate($updatedTask);
 
@@ -119,10 +131,10 @@ class TaskController extends AbstractController
         return $this->json(['success' => 'Task modified successfully.'], 200);
     }
 
-    #[Route('/task/{id}', name: 'delete', methods: "DELETE")]
-    public function delete(int $id, TaskRepository $taskRepository, EntityManagerInterface $em): JsonResponse
+    #[Route('/task/{id<\d+>}', name: 'delete', methods: "DELETE")]
+    public function delete(Task $task, EntityManagerInterface $em): JsonResponse
     {
-        $em->remove($taskRepository->find($id));
+        $em->remove($task);
         $em->flush();
         
         return $this->json(['success' => 'Task deleted successfully.'], JsonResponse::HTTP_OK);
