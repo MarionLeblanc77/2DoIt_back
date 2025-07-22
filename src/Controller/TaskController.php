@@ -23,7 +23,7 @@ use Symfony\Component\Validator\Validator\ValidatorInterface;
 class TaskController extends AbstractController
 {
     #[Route('/tasks', name: 'browse', methods: "GET")]
-    public function browse(TaskRepository $taskRepository): Response
+    public function browse(TaskRepository $taskRepository): JsonResponse
     {
         $tasks = $taskRepository->findAll();
         return $this->json($tasks, Response::HTTP_OK, [], ["groups" => ["task_read"]]);
@@ -36,7 +36,7 @@ class TaskController extends AbstractController
         SerializerInterface $serializer, 
         ValidatorInterface $validator,
         TokenStorageInterface $tokenStorage, 
-        Section $section) :Response
+        Section $section) :JsonResponse
     {
         $token = $tokenStorage->getToken();
         /** @var User */
@@ -62,7 +62,7 @@ class TaskController extends AbstractController
         $em->flush();
 
         return $this->json(['success' => 'Task added successfully.'], 200);
-        }
+    }
 
     #[Route('/task/{id<\d+>}', name: 'edit', methods: "PUT")]
     public function edit(
@@ -76,7 +76,7 @@ class TaskController extends AbstractController
         $json = $request->getContent();
         $data = json_decode($json, true);
 
-        $updatedTask = $serializer->deserialize($request->getContent(), type: Task::class, format: 'json', context: [AbstractNormalizer::OBJECT_TO_POPULATE => $task]);
+        $updatedTask = $serializer->deserialize($json, type: Task::class, format: 'json', context: [AbstractNormalizer::OBJECT_TO_POPULATE => $task]);
 
         $updatedTask->setUpdatedAt(new DateTimeImmutable());
 
@@ -85,7 +85,6 @@ class TaskController extends AbstractController
                 $user = $userRepository->find($userId);
                     if ($user) {
                         $updatedTask->addUser($user);
-                        $em->persist($user);
                     } else {
                     return $this->json(['error' => 'User not found.'], Response::HTTP_NOT_FOUND);
                 }
@@ -94,7 +93,6 @@ class TaskController extends AbstractController
                 $userId = $user->getId();
                 if (!in_array($userId, $data['users'])) {
                     $updatedTask->removeUser($user);
-                    $em->persist($user);
                 }
             }
         } 

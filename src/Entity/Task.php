@@ -34,7 +34,7 @@ class Task
      */
     #[ORM\ManyToMany(targetEntity: User::class, mappedBy: 'tasks', cascade: ['persist'])]
     #[JoinTable(name:'task_user')]
-    #[AttributeGroups(['task_read','task_users'])]
+    #[AttributeGroups(['task_read','task_users','user_section_read'])]
     private Collection $users;
 
     #[ORM\ManyToOne(inversedBy: 'tasks')]

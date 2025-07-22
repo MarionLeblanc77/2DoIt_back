@@ -17,6 +17,23 @@ class SectionRepository extends ServiceEntityRepository
     }
 
     //    /**
+    //     * @return Section[] Returns an array the Section objects with their tasks related to given user
+    //     */
+    public function findByUser($userId): array
+    {
+        return $this->createQueryBuilder('section')
+            ->innerJoin('section.tasks', 'task')
+            ->innerJoin('task.users', 'user')
+            ->addSelect('task')
+            ->addSelect('user')
+            ->andWhere('section.user = :userId')
+            ->setParameter('userId', $userId)
+            ->getQuery()
+            ->getResult()
+        ;
+    }
+
+    //    /**
     //     * @return Section[] Returns an array of Section objects
     //     */
     //    public function findByExampleField($value): array

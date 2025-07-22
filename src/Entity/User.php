@@ -40,7 +40,7 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     private ?string $password = null;
 
     #[ORM\Column(length: 255)]
-    #[AttributeGroups(['user_read', 'task_read'])]
+    #[AttributeGroups(['user_read', 'task_read', "user_section_read"])]
     private ?string $first_name = null;
 
     #[ORM\Column(length: 255)]
