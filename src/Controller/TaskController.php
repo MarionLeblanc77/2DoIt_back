@@ -2,6 +2,7 @@
 
 namespace App\Controller;
 
+use App\Entity\Section;
 use App\Entity\Task;
 use App\Entity\User;
 use App\Repository\TaskRepository;
@@ -28,42 +29,25 @@ class TaskController extends AbstractController
         return $this->json($tasks, Response::HTTP_OK, [], ["groups" => ["task_read"]]);
     }
 
-    #[Route('/usertasks', name: 'user_browse', methods: "GET")]
-    public function browseUser(TokenStorageInterface $tokenStorage): Response
-    {
-        $token = $tokenStorage->getToken();
-        $user = $token->getUser();
-        $tasks = $user->getTasks();
-        return $this->json($tasks, 200);
-    }
-
-    #[Route('/task', name: 'add', methods: "POST")]
+    #[Route('/task/section/{id<\d+>}', name: 'add', methods: "POST")]
     public function add(
         EntityManagerInterface $em, 
         Request $request, 
         SerializerInterface $serializer, 
         ValidatorInterface $validator,
-        UserRepository $userRepository) :JsonResponse
-
+        TokenStorageInterface $tokenStorage, 
+        Section $section) :Response
     {
+        $token = $tokenStorage->getToken();
+        /** @var User */
+        $user = $token->getUser();
+
         $json = $request->getContent();
-        $data = json_decode($json, true);
         
         $task = $serializer->deserialize(data: $json, type: Task::class, format: 'json');
-                
-        if (isset($data['owners']) && is_array($data['owners'])) {
-            foreach ($data['owners'] as $userId) {
-                $user = $userRepository->find($userId);
-                if ($user) {
-                    $task->addUser($user);     
-                    $user->addTask($task);
-                    $em->persist($user);                  
-                } else {
-                    return $this->json(['error' => 'User not found.'], Response::HTTP_NOT_FOUND);
-                }
-            }
-        }        
-        
+        $task->setSection($section);
+        $task->addUser($user);
+
         $errorReadable = [];
         $errors = $validator->validate($task);
         foreach ($errors as $currentError) {
@@ -78,7 +62,7 @@ class TaskController extends AbstractController
         $em->flush();
 
         return $this->json(['success' => 'Task added successfully.'], 200);
-    }
+        }
 
     #[Route('/task/{id<\d+>}', name: 'edit', methods: "PUT")]
     public function edit(

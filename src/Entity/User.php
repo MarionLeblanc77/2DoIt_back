@@ -58,7 +58,7 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     /**
      * @var Collection<int, Task>
      */
-    #[ORM\ManyToMany(targetEntity: Task::class, mappedBy: 'users', cascade: ['persist'])]
+    #[ORM\ManyToMany(targetEntity: Task::class, inversedBy: 'users', cascade: ['persist'])]
     #[JoinTable(name:'task_user')]
     private Collection $tasks;
 
@@ -210,16 +210,13 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     {
         if(!$this->tasks->contains($task)) {
            $this->tasks->add($task);
-           $task->addUser($this);
         }
         return $this;    
     }
 
     public function removeTask(Task $task): self
     {
-        if ($this->tasks->removeElement($task)) {
-            $task->removeUser($this);
-        }
+        $this->tasks->removeElement($task);
         return $this;
     }
 
@@ -244,7 +241,6 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     public function removeSection(Section $section): static
     {
         if ($this->sections->removeElement($section)) {
-            // set the owning side to null (unless already changed)
             if ($section->getUser() === $this) {
                 $section->setUser(null);
             }

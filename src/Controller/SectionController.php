@@ -3,6 +3,7 @@
 namespace App\Controller;
 
 use App\Entity\Section;
+use App\Entity\User;
 use App\Repository\SectionRepository;
 use DateTimeImmutable;
 use Doctrine\ORM\EntityManagerInterface;
@@ -11,6 +12,7 @@ use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
+use Symfony\Component\Security\Core\Authentication\Token\Storage\TokenStorageInterface;
 use Symfony\Component\Serializer\Normalizer\AbstractNormalizer;
 use Symfony\Component\Serializer\SerializerInterface;
 use Symfony\Component\Validator\Validator\ValidatorInterface;
@@ -22,7 +24,17 @@ class SectionController extends AbstractController
     public function browse(SectionRepository $sectionRepository): Response
     {
         $sections = $sectionRepository->findAll();
-        return $this->json($sections, Response::HTTP_OK);
+        return $this->json($sections, Response::HTTP_OK, [], ["groups" => ["section_read"]]);
+    }
+
+    #[Route('/usersections', name: 'user_browse', methods: "GET")]
+    public function browseUser(TokenStorageInterface $tokenStorage, SectionRepository $sectionRepository): Response
+    {
+        $token = $tokenStorage->getToken();
+        /** @var User */
+        $user = $token->getUser();
+        $sections = $sectionRepository->findBy(['user' => $user]);
+        return $this->json($sections, Response::HTTP_OK, [], ["groups" => ["user_section_read"]]);
     }
 
     #[Route('/section', name: 'add', methods: "POST")]
@@ -30,10 +42,16 @@ class SectionController extends AbstractController
         EntityManagerInterface $em, 
         Request $request, 
         SerializerInterface $serializer, 
+        TokenStorageInterface $tokenStorage, 
         ValidatorInterface $validator) :JsonResponse 
     {
+        $token = $tokenStorage->getToken();
+        /** @var User */
+        $user = $token->getUser();
+
         $json = $request->getContent();
         $section = $serializer->deserialize(data: $json, type: Section::class, format: 'json');
+        $section->setUser($user);
                 
         $errorReadable = [];
         $errors = $validator->validate($section);

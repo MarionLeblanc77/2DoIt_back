@@ -16,25 +16,23 @@ class Task
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column]
-    #[AttributeGroups(['task_read'])]
+    #[AttributeGroups(['task_read', 'user_section_read'])]
     private ?int $id = null;
 
     #[ORM\Column(length: 255)]
-    #[AttributeGroups(['task_read'])]
+    #[AttributeGroups(['task_read', 'user_section_read'])]
     private ?string $content = null;
 
     #[ORM\Column]
-    #[AttributeGroups(['task_read'])]
     private ?\DateTimeImmutable $created_at = null;
 
     #[ORM\Column(nullable: true)]
-    #[AttributeGroups(['task_read'])]
     private ?\DateTimeImmutable $updated_at = null;
 
     /**
      * @var Collection<int, User>
      */
-    #[ORM\ManyToMany(targetEntity: User::class, inversedBy: 'tasks', cascade: ['persist'])]
+    #[ORM\ManyToMany(targetEntity: User::class, mappedBy: 'tasks', cascade: ['persist'])]
     #[JoinTable(name:'task_user')]
     #[AttributeGroups(['task_read','task_users'])]
     private Collection $users;
@@ -102,6 +100,7 @@ class Task
     {
         if(!$this->users->contains($user)) {
            $this->users->add($user);
+           $user->addTask($this);
         }
         return $this;
     }
@@ -109,6 +108,7 @@ class Task
     public function removeUser(User $user): self
     {
         $this->users->removeElement($user);
+        $user->removeTask($this);
         return $this;
     }
 
