@@ -11,6 +11,8 @@ TODO
 
 ### FIRST INSTALLATION
 
+TODO
+
 ### RUN LOCALLY
 
 Run on <http://localhost:8000/> with the local web server of Symfony:
