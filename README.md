@@ -7,6 +7,8 @@ Welcome to the back-end repository of the 2DoIt project.
 
 ## DEVELOPMENT
 
+TODO
+
 ### FIRST INSTALLATION
 
 ### RUN LOCALLY

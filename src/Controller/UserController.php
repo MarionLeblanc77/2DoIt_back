@@ -97,8 +97,8 @@ class UserController extends AbstractController
             return $this->json(['errors' => 'Email and password do not match'], JsonResponse::HTTP_UNAUTHORIZED);
         }
 
-        $token = $jwtManager->create($user);
-
+        $token = $jwtManager->create($user);    
+        
         return $this->json(['user' => $user, 'token' => $token], 200, context: ["groups" => ["user_read"]]);
     }
 
