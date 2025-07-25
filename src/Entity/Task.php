@@ -22,6 +22,10 @@ class Task
     #[ORM\Column(length: 255)]
     #[AttributeGroups(['task_read', 'user_section_read'])]
     private ?string $content = null;
+    
+    #[ORM\Column(type: 'boolean', options: ['default' => true])]
+    #[AttributeGroups(['task_read', 'user_section_read'])]
+    private bool $active = true;
 
     #[ORM\Column]
     private ?\DateTimeImmutable $created_at = null;
@@ -33,18 +37,18 @@ class Task
      * @var Collection<int, User>
      */
     #[ORM\ManyToMany(targetEntity: User::class, mappedBy: 'tasks', cascade: ['persist'])]
-    #[JoinTable(name:'task_user')]
     #[AttributeGroups(['task_read','task_users','user_section_read'])]
     private Collection $users;
 
-    #[ORM\ManyToOne(inversedBy: 'tasks')]
-    #[ORM\JoinColumn(nullable: false)]
-    private ?Section $section = null;
+    #[ORM\ManyToMany(targetEntity: Section::class, mappedBy: 'tasks', cascade: ['persist'])]
+    private Collection $sections;
 
     public function __construct()
     {
         $this->created_at = new \DateTimeImmutable();
         $this->users = new ArrayCollection();
+        $this->sections = new ArrayCollection();
+
     }
 
     public function getId(): ?int
@@ -60,6 +64,18 @@ class Task
     public function setContent(string $content): static
     {
         $this->content = $content;
+
+        return $this;
+    }
+    
+    public function isActive(): ?bool
+    {
+        return $this->active;
+    }
+
+    public function setActive(bool $active): static
+    {
+        $this->active = $active;
 
         return $this;
     }
@@ -112,15 +128,29 @@ class Task
         return $this;
     }
 
-    public function getSection(): ?Section
+    /**
+     * @return Collection<int, Task>
+     */
+    public function getSections(): Collection
     {
-        return $this->section;
+        return $this->sections;
     }
 
-    public function setSection(?Section $section): static
+    public function addSection(Section $section): static
     {
-        $this->section = $section;
+        if (!$this->sections->contains($section)) {
+            $this->sections->add($section);
+            $section->addTask($this);
+        }
 
+        return $this;
+    }
+
+    public function removeSection(Section $section): static
+    {
+        $this->sections->removeElement($section); 
+            $section->removeTask($this);
+       
         return $this;
     }
 }

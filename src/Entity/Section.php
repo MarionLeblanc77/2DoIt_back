@@ -31,7 +31,7 @@ class Section
     /**
      * @var Collection<int, Task>
      */
-    #[ORM\OneToMany(targetEntity: Task::class, mappedBy: 'section', orphanRemoval: true)]
+    #[ORM\ManyToMany(targetEntity: Task::class, inversedBy: 'sections', cascade: ['persist'])]
     #[AttributeGroups(['section_read', 'user_section_read'])]
     private Collection $tasks;
 
@@ -106,24 +106,17 @@ class Section
         return $this->tasks;
     }
 
-    public function addTask(Task $task): static
+    public function addTask(Task $task): self
     {
-        if (!$this->tasks->contains($task)) {
-            $this->tasks->add($task);
-            $task->setSection($this);
+        if(!$this->tasks->contains($task)) {
+           $this->tasks->add($task);
         }
-
-        return $this;
+        return $this;    
     }
 
-    public function removeTask(Task $task): static
+    public function removeTask(Task $task): self
     {
-        if ($this->tasks->removeElement($task)) {
-            if ($task->getSection() === $this) {
-                $task->setSection(null);
-            }
-        }
-
+        $this->tasks->removeElement($task);
         return $this;
     }
 }
