@@ -71,14 +71,29 @@ class TaskController extends AbstractController
         SerializerInterface $serializer, 
         ValidatorInterface $validator,
         Task $task,
+        TokenStorageInterface $tokenStorage, 
         UserRepository $userRepository) : JsonResponse
     {
+        $token = $tokenStorage->getToken();
+        /** @var User */
+        $user = $token->getUser();
+        $userId = $user->getId();
+
         $json = $request->getContent();
         $data = json_decode($json, true);
 
         $updatedTask = $serializer->deserialize($json, type: Task::class, format: 'json', context: [AbstractNormalizer::OBJECT_TO_POPULATE => $task]);
 
         $updatedTask->setUpdatedAt(new DateTimeImmutable());
+
+        if (!isset($data['users'])) {
+            $users = $task->getUsers();
+            foreach ($users as $user) {
+                $data['users'][] = $user->getId();
+            }
+        } else {
+            $data['users'][] = $userId;
+        }
 
         if (isset($data['users']) && is_array($data['users'])) {
             foreach ($data['users'] as $userId) {
