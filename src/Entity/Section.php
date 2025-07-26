@@ -26,6 +26,7 @@ class Section
     private ?\DateTimeImmutable $created_at = null;
 
     #[ORM\Column(nullable: true)]
+    #[AttributeGroups(['section_read', 'user_section_read'])]
     private ?\DateTimeImmutable $updated_at = null;
 
     /**

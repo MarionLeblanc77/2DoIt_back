@@ -27,6 +27,12 @@ class SectionController extends AbstractController
         return $this->json($sections, Response::HTTP_OK, [], ["groups" => ["section_read"]]);
     }
 
+    #[Route('/section/{id<\d+>}', name: 'read', methods: "GET")]
+    public function findOne(Section $section): Response
+    {
+        return $this->json($section, Response::HTTP_OK, [], ["groups" => ["section_read"]]);
+    }
+
     #[Route('/usersections', name: 'user_browse', methods: "GET")]
     public function browseUser(TokenStorageInterface $tokenStorage, SectionRepository $sectionRepository): Response
     {

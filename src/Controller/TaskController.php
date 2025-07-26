@@ -45,7 +45,7 @@ class TaskController extends AbstractController
         $json = $request->getContent();
         
         $task = $serializer->deserialize(data: $json, type: Task::class, format: 'json');
-        $task->setSection($section);
+        $task->addSection($section);
         $task->addUser($user);
 
         $errorReadable = [];
@@ -61,7 +61,7 @@ class TaskController extends AbstractController
         $em->persist($task);
         $em->flush();
 
-        return $this->json(['success' => 'Task added successfully.'], 200);
+        return $this->json(['success' => 'Task added successfully.', 'task'=>$task], JsonResponse::HTTP_OK, [], ["groups" => ["task_read"]]);
     }
 
     #[Route('/task/{id<\d+>}', name: 'edit', methods: "PUT")]
