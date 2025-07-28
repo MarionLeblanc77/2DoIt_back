@@ -74,7 +74,7 @@ class SectionController extends AbstractController
         $em->persist($section);
         $em->flush();
 
-        return $this->json(['success' => 'Section added successfully.'], 200);
+        return $this->json(['success' => 'Section added successfully.', 'section' => $section], JsonResponse::HTTP_OK, [], ["groups" => ["section_read"]]);
     }
 
     #[Route('/section/{id<\d+>}', name: 'edit', methods: "PUT")]
@@ -102,7 +102,7 @@ class SectionController extends AbstractController
         $em->persist($updatedSection);
         $em->flush();
 
-        return $this->json(['success' => 'Section modified successfully.'], 200);
+        return $this->json(['success' => 'Section modified successfully.', 'section' => $section], JsonResponse::HTTP_OK, [], ["groups" => ["section_read"]]);
     }
 
     #[Route('/section/{id<\d+>}', name: 'delete', methods: "DELETE")]
