@@ -14,6 +14,7 @@ use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
 use Symfony\Component\Serializer\SerializerInterface;
 use Symfony\Component\Routing\Attribute\Route;
+use Symfony\Component\Security\Core\Authentication\Token\Storage\TokenStorageInterface;
 use Symfony\Component\Security\Core\Exception\UserNotFoundException;
 use Symfony\Component\Security\Core\User\UserProviderInterface;
 use Symfony\Component\Serializer\Normalizer\AbstractNormalizer;
@@ -109,14 +110,17 @@ class UserController extends AbstractController
         return $this->json($users, Response::HTTP_OK, [], ["groups" => ["user_read"]]);
     }
 
-    #[Route('/user/{id<\d+>}', name: 'edit', methods: "PUT")]
+    #[Route('/user', name: 'edit', methods: "PUT")]
     public function edit(
         EntityManagerInterface $em, 
         Request $request, 
         SerializerInterface $serializer, 
         ValidatorInterface $validator,
-        User $user) : JsonResponse
+        TokenStorageInterface $tokenStorage) : JsonResponse
     {
+        $token = $tokenStorage->getToken();
+        /** @var User */
+        $user = $token->getUser();  
         $updatedUser = $serializer->deserialize($request->getContent(), type: User::class, format: 'json', context: [AbstractNormalizer::OBJECT_TO_POPULATE => $user]);
 
         $updatedUser->setUpdatedAt(new DateTimeImmutable());
@@ -137,16 +141,64 @@ class UserController extends AbstractController
         return $this->json(['success' => 'User modified successfully.'], 200);
     }
 
-    #[Route('/user/{id<\d+>}', name: 'delete', methods: "DELETE")]
-    public function delete(User $user, EntityManagerInterface $em): JsonResponse
-    {       
-        if (!$user) {
-            return $this->json(['errors' => 'User not found'], 404);
-        }
-        
+    #[Route('/user', name: 'delete', methods: "DELETE")]
+    public function delete(EntityManagerInterface $em, TokenStorageInterface $tokenStorage): JsonResponse
+    {     
+        $token = $tokenStorage->getToken();
+        /** @var User */
+        $user = $token->getUser();          
         $em->remove($user);
         $em->flush();
         
         return $this->json(['success' => 'User deleted successfully.'], 200);
     }
+
+    #[Route('/user/contacts/', name: 'contacts_browse', methods: "GET")]
+    public function browseUserContact(TokenStorageInterface $tokenStorage): JsonResponse
+    {
+        $token = $tokenStorage->getToken();
+        /** @var User */
+        $user = $token->getUser();
+        $contacts = $user->getUsers();
+        return $this->json($contacts, Response::HTTP_OK, [], ["groups" => ["user_contacts"]]);
+    }
+
+    #[Route('/user/{id<\d+>}/contacts', name: 'contacts_add', methods: "POST")]
+    public function addContact(
+        User $user, 
+        EntityManagerInterface $em, 
+        TokenStorageInterface $tokenStorage): JsonResponse
+    {
+        if (!$user) {
+            return $this->json(['errors' => 'User not found'], 404);
+        }
+        $token = $tokenStorage->getToken();
+        /** @var User */
+        $activeUser = $token->getUser();
+        $activeUser->addUser($user);
+        $em->persist($activeUser);
+        $em->flush();
+
+        return $this->json(['success' => "User's contact added successfully.", 'usersContact'=> $activeUser->getUsers()], Response::HTTP_OK, [], ["groups" => ["user_contacts"]]);
+    }
+
+    #[Route('/user/{id<\d+>}/contacts', name: 'contacts_delete', methods: "DELETE")]
+    public function deleteContact(
+        User $user, 
+        EntityManagerInterface $em, 
+        TokenStorageInterface $tokenStorage): JsonResponse
+    {
+        if (!$user) {
+            return $this->json(['errors' => 'User not found'], 404);
+        }
+        $token = $tokenStorage->getToken();
+        /** @var User */
+        $activeUser = $token->getUser();
+        $activeUser->removeUser($user);
+        $em->flush();
+
+        return $this->json(['success' => "User's contact deleted successfully.", 'usersContact'=> $activeUser->getUsers()], Response::HTTP_OK, [], ["groups" => ["user_contacts"]]);
+    }
+
+
 }

@@ -33,7 +33,7 @@ bin/console doctrine:migrations:migrate
 
 #### DEBUG (to fix)
 
-Issue with cache access :
+Issue with cache access ("...Cannot rename..., var\cache\dev"):
 
 ```PowerShell
 Remove-Item -Recurse -Force var\cache
@@ -42,4 +42,10 @@ Remove-Item -Recurse -Force var\cache
 ```bash
 bin/console cache:clear --env=dev
 bin/console cache:warmup --env=dev
+```
+
+Issue with token jwt:
+
+```bash
+php bin/console lexik:jwt:generate-keypair
 ```
