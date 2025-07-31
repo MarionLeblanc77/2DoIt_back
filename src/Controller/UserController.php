@@ -163,23 +163,33 @@ class UserController extends AbstractController
         return $this->json($contacts, Response::HTTP_OK, [], ["groups" => ["user_contacts"]]);
     }
 
-    #[Route('/user/{id<\d+>}/contacts', name: 'contacts_add', methods: "POST")]
+    #[Route('/user/{email}/contact', name: 'contacts_add', methods: "POST")]
     public function addContact(
-        User $user, 
+        string $email,
+        UserRepository $userRepository, 
         EntityManagerInterface $em, 
         TokenStorageInterface $tokenStorage): JsonResponse
     {
+        if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+            return $this->json(['errors' => 'Invalid email format'], Response::HTTP_BAD_REQUEST);
+        }
+        $user = $userRepository->findOneBy(['email' => $email]);
+
         if (!$user) {
-            return $this->json(['errors' => 'User not found'], 404);
+            return $this->json(['errors' => 'Contact not found'], 404);
         }
         $token = $tokenStorage->getToken();
         /** @var User */
         $activeUser = $token->getUser();
+
+        if ($activeUser->getUsers()->contains($user)) {
+            return $this->json(['errors' => 'Contact already added'], Response::HTTP_CONFLICT);
+        }
         $activeUser->addUser($user);
         $em->persist($activeUser);
         $em->flush();
 
-        return $this->json(['success' => "User's contact added successfully.", 'usersContact'=> $activeUser->getUsers()], Response::HTTP_OK, [], ["groups" => ["user_contacts"]]);
+        return $this->json(['success' => "User's contact added successfully.", 'userContacts'=> $activeUser->getUsers()], Response::HTTP_OK, [], ["groups" => ["user_contacts"]]);
     }
 
     #[Route('/user/{id<\d+>}/contacts', name: 'contacts_delete', methods: "DELETE")]
