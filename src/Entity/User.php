@@ -19,11 +19,11 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column]
-    #[AttributeGroups(['user_read', 'task_read'])]
+    #[AttributeGroups(['user_read', 'task_read', "user_contacts"])]
     private ?int $id = null;
 
     #[ORM\Column(length: 255)]
-    #[AttributeGroups(['user_read'])]
+    #[AttributeGroups(['user_read', ])]
     private ?string $email = null;
 
     /**
@@ -40,11 +40,11 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     private ?string $password = null;
 
     #[ORM\Column(length: 255)]
-    #[AttributeGroups(['user_read', 'task_read', "user_section_read"])]
+    #[AttributeGroups(['user_read', 'task_read', "user_section_read", "user_contacts"])]
     private ?string $first_name = null;
 
     #[ORM\Column(length: 255)]
-    #[AttributeGroups(['user_read', 'task_read'])]
+    #[AttributeGroups(['user_read', 'task_read', "user_contacts"])]
     private ?string $last_name = null;
 
     #[ORM\Column]
@@ -67,11 +67,18 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     #[ORM\OneToMany(targetEntity: Section::class, mappedBy: 'user', orphanRemoval: true)]
     private Collection $sections;
 
+    /**
+     * @var Collection<int, self>
+     */
+    #[ORM\ManyToMany(targetEntity: self::class, inversedBy: 'users')]
+    private Collection $users;
+
     public function __construct()
     {
         $this->created_at = new \DateTimeImmutable();
         $this->tasks = new ArrayCollection();
         $this->sections = new ArrayCollection();
+        $this->users = new ArrayCollection();
     }
 
     public function getId(): ?int
@@ -243,6 +250,34 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
                 $section->setUser(null);
             }
         }
+
+        return $this;
+    }
+
+    /**
+     * @return Collection<int, self>
+     */
+    public function getUsers(): Collection
+    {
+        return $this->users;
+    }
+
+    public function addUser(self $user): static
+    {
+        if (!$this->users->contains($user)) {
+            $this->users->add($user);
+        }
+        if (!$user->users->contains($this)) {
+            $user->users->add($this);
+        }
+
+        return $this;
+    }
+
+    public function removeUser(self $user): static
+    {
+        $this->users->removeElement($user);
+        $user->users->removeElement($this);
 
         return $this;
     }
