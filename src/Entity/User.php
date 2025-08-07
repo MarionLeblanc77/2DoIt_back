@@ -19,7 +19,7 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column]
-    #[AttributeGroups(['user_read', 'task_read', "user_contacts"])]
+    #[AttributeGroups(['user_read', 'task_read',"user_section_read", "user_contacts"])]
     private ?int $id = null;
 
     #[ORM\Column(length: 255)]
@@ -44,7 +44,7 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     private ?string $first_name = null;
 
     #[ORM\Column(length: 255)]
-    #[AttributeGroups(['user_read', 'task_read', "user_contacts"])]
+    #[AttributeGroups(['user_read', 'task_read',  "user_section_read", "user_contacts"])]
     private ?string $last_name = null;
 
     #[ORM\Column]
