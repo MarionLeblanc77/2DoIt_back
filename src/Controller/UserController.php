@@ -30,7 +30,7 @@ class UserController extends AbstractController
         EntityManagerInterface $em,
         Request $request,
         SerializerInterface $serializer,
-        // ValidatorInterface $validator,
+        ValidatorInterface $validator,
         UserPasswordHasherInterface $passwordHasher
     ): JsonResponse {
 
@@ -41,34 +41,33 @@ class UserController extends AbstractController
         if ($userRepository->findOneBy(['email' => $user->getEmail()])) {
             return $this->json(['errors' => 'A user with this email already exists.'], JsonResponse::HTTP_CONFLICT);
         }
-        // $errorReadable = [];
+        $errorReadable = [];
 
         $password = $user->getPassword();
-        // if (strlen($password) < 12) {
-        //     $errorReadable[]= 'The password must contains 12 caracters.';
-        // }
+        if (strlen($password) < 12) {
+            $errorReadable[]= 'The password must contains 12 caracters.';
+        }
 
-        // if (!preg_match('/[A-Z]/', $password)) {
-        //     $errorReadable[]= 'The password must contains an uppercase caracter.';
-        // }
+        if (!preg_match('/[A-Z]/', $password)) {
+            $errorReadable[]= 'The password must contains an uppercase caracter.';
+        }
 
-        // if (!preg_match('/[\W]/', $password)) {
-        //     $errorReadable[]= 'The password must contains a special caracter.';
-        // }
+        if (!preg_match('/[\W]/', $password)) {
+            $errorReadable[]= 'The password must contains a special caracter.';
+        }
         
         $user->setPassword($passwordHasher->hashPassword($user, $password));
         $user->setRoles(['ROLE_USER']);
 
-        // $errors = $validator->validate($user);
+        $errors = $validator->validate($user);
 
-        // foreach ($errors as $currentError) {
-        //     $errorReadable[] = $currentError->getMessage();
-        // }
-        // if (count($errorReadable) > 0) {
-        //     return $this->json(['errors' => $errorReadable], status: Response::HTTP_BAD_REQUEST);
-        // }
+        foreach ($errors as $currentError) {
+            $errorReadable[] = $currentError->getMessage();
+        }
+        if (count($errorReadable) > 0) {
+            return $this->json(['errors' => $errorReadable], status: Response::HTTP_BAD_REQUEST);
+        }
 
-        // mettre à jour
         $em->persist($user);
         $em->flush();
 

@@ -137,6 +137,19 @@ class TaskController extends AbstractController
         return $this->json(['success' => 'Task deleted successfully.'], JsonResponse::HTTP_OK);
     }
 
+    #[Route('/task/{task<\d+>}/user/{user<\d+>}', name: 'add_user', methods: "POST")]
+    public function addUserToTask(Task $task, User $user, EntityManagerInterface $em): JsonResponse
+    {
+        if ($task->getUsers()->contains($user)) {
+            return $this->json(['error' => 'User already has this task.'], Response::HTTP_NOT_FOUND);
+        }
+        $task->addUser($user);
+        $em->persist($task);
+        $em->flush();
+
+        return $this->json(['success' => 'User added to task successfully.'], JsonResponse::HTTP_OK);
+    }
+
     #[Route('/task/{task<\d+>}/user/{user<\d+>}', name: 'delete_user', methods: "DELETE")]
     public function deleteUserFromTask(Task $task, User $user, EntityManagerInterface $em): JsonResponse
     {
