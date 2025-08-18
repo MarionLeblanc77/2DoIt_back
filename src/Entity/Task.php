@@ -16,7 +16,7 @@ class Task
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column]
-    #[AttributeGroups(['task_read', 'user_section_read'])]
+    #[AttributeGroups(['task_read', 'user_section_read', 'task_toggle_active'])]
     private ?int $id = null;
 
     #[ORM\Column(length: 255)]
@@ -24,7 +24,7 @@ class Task
     private ?string $content = null;
     
     #[ORM\Column(type: 'boolean', options: ['default' => true])]
-    #[AttributeGroups(['task_read', 'user_section_read'])]
+    #[AttributeGroups(['task_read', 'user_section_read', 'task_toggle_active'])]
     private bool $active = true;
 
     #[ORM\Column]

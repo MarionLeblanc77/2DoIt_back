@@ -128,6 +128,19 @@ class TaskController extends AbstractController
         return $this->json(['success' => 'Task modified successfully.', 'task'=>$task], JsonResponse::HTTP_OK, [], ["groups" => ["task_read"]]);
     }
 
+        #[Route('/task/{id<\d+>}/toggle', name: 'toggle_active', methods: "PUT")]
+    public function toggleActive(
+        EntityManagerInterface $em,  
+        Task $task) : JsonResponse
+    {
+        $task->setActive(!$task->isActive());
+
+        $em->persist($task);
+        $em->flush();
+
+        return $this->json(['success' => 'Active status modified successfully.', 'task'=>$task], JsonResponse::HTTP_OK, [], ["groups" => ["task_toggle_active"]]);
+    }
+
     #[Route('/task/{id<\d+>}', name: 'delete', methods: "DELETE")]
     public function delete(Task $task, EntityManagerInterface $em): JsonResponse
     {
@@ -135,5 +148,30 @@ class TaskController extends AbstractController
         $em->flush();
         
         return $this->json(['success' => 'Task deleted successfully.'], JsonResponse::HTTP_OK);
+    }
+
+    #[Route('/task/{task<\d+>}/user/{user<\d+>}', name: 'add_user', methods: "POST")]
+    public function addUserToTask(Task $task, User $user, EntityManagerInterface $em): JsonResponse
+    {
+        if ($task->getUsers()->contains($user)) {
+            return $this->json(['error' => 'User already has this task.'], Response::HTTP_NOT_FOUND);
+        }
+        $task->addUser($user);
+        $em->persist($task);
+        $em->flush();
+
+        return $this->json(['success' => 'User added to task successfully.'], JsonResponse::HTTP_OK);
+    }
+
+    #[Route('/task/{task<\d+>}/user/{user<\d+>}', name: 'delete_user', methods: "DELETE")]
+    public function deleteUserFromTask(Task $task, User $user, EntityManagerInterface $em): JsonResponse
+    {
+        if (!$task->getUsers()->contains($user)) {
+            return $this->json(['error' => 'User not found in task.'], Response::HTTP_NOT_FOUND);
+        }
+        $task->removeUser($user);
+        $em->flush();
+
+        return $this->json(['success' => 'User removed from task successfully.'], JsonResponse::HTTP_OK);
     }
 }
