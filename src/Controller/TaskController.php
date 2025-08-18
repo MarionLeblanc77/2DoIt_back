@@ -128,6 +128,19 @@ class TaskController extends AbstractController
         return $this->json(['success' => 'Task modified successfully.', 'task'=>$task], JsonResponse::HTTP_OK, [], ["groups" => ["task_read"]]);
     }
 
+        #[Route('/task/{id<\d+>}/toggle', name: 'toggle_active', methods: "PUT")]
+    public function toggleActive(
+        EntityManagerInterface $em,  
+        Task $task) : JsonResponse
+    {
+        $task->setActive(!$task->isActive());
+
+        $em->persist($task);
+        $em->flush();
+
+        return $this->json(['success' => 'Active status modified successfully.', 'task'=>$task], JsonResponse::HTTP_OK, [], ["groups" => ["task_toggle_active"]]);
+    }
+
     #[Route('/task/{id<\d+>}', name: 'delete', methods: "DELETE")]
     public function delete(Task $task, EntityManagerInterface $em): JsonResponse
     {
