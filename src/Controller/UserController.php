@@ -74,6 +74,10 @@ class UserController extends AbstractController
         return $this->json(['success' => 'New account created'], 200);
     }
 
+    #[Route('/{path}', methods: ['OPTIONS'], requirements: ['path' => '.*'])]
+    public function options() {
+        return new Response('', 200);
+    }
     #[Route('/login', name: 'login', methods: "POST")]
     public function login( Request $request, UserProviderInterface $userProvider, JWTTokenManagerInterface $jwtManager, UserPasswordHasherInterface $passwordHasher): JsonResponse
     {
