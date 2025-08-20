@@ -69,9 +69,9 @@ DirectoryIndex index.php
     </IfModule>
 </IfModule>
 
-# <IfModule mod_headers.c>
-#     Header always set Access-Control-Allow-Origin "https://nx0dwjbucbs.preview.infomaniak.website"
-#     Header always set Access-Control-Allow-Methods "GET,POST,OPTIONS,PUT,PATCH,DELETE"
-#     Header always set Access-Control-Allow-Headers "Content-Type, Authorization"
-#     Header always set Access-Control-Allow-Credentials "true"
-# </IfModule>
+<IfModule mod_headers.c>
+    Header always set Access-Control-Allow-Origin "https://nx0dwjbucbs.preview.infomaniak.website"
+    Header always set Access-Control-Allow-Methods "GET,POST,OPTIONS,PUT,PATCH,DELETE"
+    Header always set Access-Control-Allow-Headers "Content-Type, Authorization"
+    Header always set Access-Control-Allow-Credentials "true"
+</IfModule>
