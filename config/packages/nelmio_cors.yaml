@@ -1,9 +1,9 @@
 nelmio_cors:
     defaults:
         allow_credentials: true
-        origin_regex: true
-        allow_origin: ['%env(CORS_ALLOW_ORIGIN)%']
-        # allow_origin: ['https://nx0dwjbucbs.preview.infomaniak.website/']
+        # origin_regex: true
+        # allow_origin: ['%env(CORS_ALLOW_ORIGIN)%']
+        allow_origin: ['https://nx0dwjbucbs.preview.infomaniak.website/']
         allow_methods: ['GET', 'OPTIONS', 'POST', 'PUT', 'PATCH', 'DELETE']
         allow_headers: ['Content-Type', 'Authorization']
         expose_headers: ['Link']
