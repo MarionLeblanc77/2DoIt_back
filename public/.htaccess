@@ -1,3 +1,12 @@
+# --- CORS fallback headers (prod only) ---
+<IfModule mod_headers.c>
+    Header always set Access-Control-Allow-Origin "https://nx0dwjbucbs.preview.infomaniak.website"
+    Header always set Access-Control-Allow-Methods "GET,POST,OPTIONS,PUT,PATCH,DELETE"
+    Header always set Access-Control-Allow-Headers "Content-Type, Authorization"
+    Header always set Access-Control-Allow-Credentials "true"
+</IfModule>
+# ----------------------------------------
+
 # Use the front controller as index file. It serves as a fallback solution when
 # every other rewrite/redirect fails (e.g. in an aliased environment without
 # mod_rewrite). Additionally, this reduces the matching process for the
