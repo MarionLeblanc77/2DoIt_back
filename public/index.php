@@ -7,6 +7,7 @@ require_once dirname(__DIR__).'/vendor/autoload_runtime.php';
 if (isset($_SERVER['APP_ENV'])) {
     if ($_SERVER['APP_ENV'] === 'prod') {
         header('Access-Control-Allow-Origin: https://nx0dwjbucbs.preview.infomaniak.website');
+        header('Access-Control-Allow-Credentials: true');
     } else {
         header('Access-Control-Allow-Origin: http://localhost:5173');
     }
