@@ -98,14 +98,31 @@ class UserController extends AbstractController
         }
 
         try {
-            // Debug: Check if JWT keys exist
+
+            error_log('JWT_PASSPHRASE set: ' . (isset($_ENV['JWT_PASSPHRASE']) ? 'YES' : 'NO'));
+            error_log('JWT_SECRET_KEY: ' . ($_ENV['JWT_SECRET_KEY'] ?? 'NOT SET'));
+
             $privateKeyPath = $this->getParameter('kernel.project_dir') . '/config/jwt/private.pem';
-            $publicKeyPath = $this->getParameter('kernel.project_dir') . '/config/jwt/public.pem';
+
+            // Debug: Check PHP extensions and OpenSSL
+            error_log('OpenSSL loaded: ' . (extension_loaded('openssl') ? 'YES' : 'NO'));
+            error_log('PHP version: ' . phpversion());
             
-            error_log('Private key exists: ' . (file_exists($privateKeyPath) ? 'YES' : 'NO'));
-            error_log('Private key readable: ' . (is_readable($privateKeyPath) ? 'YES' : 'NO'));
-            error_log('Public key exists: ' . (file_exists($publicKeyPath) ? 'YES' : 'NO'));
-            
+
+
+            // Test if we can read the private key content
+            $privateKeyContent = file_get_contents($privateKeyPath);
+            error_log('Private key content length: ' . strlen($privateKeyContent));
+            error_log('Private key starts with: ' . substr($privateKeyContent, 0, 50));
+                
+            // Test OpenSSL directly
+            $privateKey = openssl_pkey_get_private(file_get_contents($privateKeyPath), $_ENV['JWT_PASSPHRASE'] ?? '');
+            if (!$privateKey) {
+                error_log('OpenSSL Error: ' . openssl_error_string());
+                return $this->json(['errors' => 'OpenSSL key error'], JsonResponse::HTTP_INTERNAL_SERVER_ERROR);
+            }
+            error_log('OpenSSL key loaded successfully');
+
             $token = $jwtManager->create($user);
             
             error_log('Token created: ' . ($token ? 'YES' : 'NO'));
