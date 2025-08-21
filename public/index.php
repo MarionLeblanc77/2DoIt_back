@@ -10,9 +10,6 @@ if (isset($_SERVER['APP_ENV'])) {
     } else {
         header('Access-Control-Allow-Origin: http://localhost:5173');
     }
-    if (!headers_sent() && !in_array('Access-Control-Allow-Credentials: true', headers_list())) {
-        header('Access-Control-Allow-Credentials: true');
-    }
 }
 
 return function (array $context) {
