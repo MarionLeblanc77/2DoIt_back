@@ -97,7 +97,30 @@ class UserController extends AbstractController
             return $this->json(['errors' => 'Email and password do not match'], JsonResponse::HTTP_UNAUTHORIZED);
         }
 
-        $token = $jwtManager->create($user);    
+        try {
+            // Debug: Check if JWT keys exist
+            $privateKeyPath = $this->getParameter('kernel.project_dir') . '/config/jwt/private.pem';
+            $publicKeyPath = $this->getParameter('kernel.project_dir') . '/config/jwt/public.pem';
+            
+            error_log('Private key exists: ' . (file_exists($privateKeyPath) ? 'YES' : 'NO'));
+            error_log('Private key readable: ' . (is_readable($privateKeyPath) ? 'YES' : 'NO'));
+            error_log('Public key exists: ' . (file_exists($publicKeyPath) ? 'YES' : 'NO'));
+            
+            $token = $jwtManager->create($user);
+            
+            error_log('Token created: ' . ($token ? 'YES' : 'NO'));
+            error_log('Token length: ' . strlen($token ?? ''));
+            
+            if (empty($token)) {
+                error_log('JWT token is empty!');
+                return $this->json(['errors' => 'Failed to create authentication token'], JsonResponse::HTTP_INTERNAL_SERVER_ERROR);
+            }
+        
+        } catch (\Exception $e) {
+            error_log('JWT Error: ' . $e->getMessage());
+            error_log('JWT Class: ' . get_class($e));
+            return $this->json(['errors' => 'Authentication system error: ' . $e->getMessage()], JsonResponse::HTTP_INTERNAL_SERVER_ERROR);
+        }    
         
         return $this->json(['user' => $user, 'token' => $token], 200, context: ["groups" => ["user_read"]]);
     }
