@@ -98,22 +98,18 @@ class UserController extends AbstractController
         }
 
         try {
-
-            error_log('JWT_PASSPHRASE set: ' . (isset($_ENV['JWT_PASSPHRASE']) ? 'YES' : 'NO'));
-            error_log('JWT_SECRET_KEY: ' . ($_ENV['JWT_SECRET_KEY'] ?? 'NOT SET'));
+            error_log('$_ENV JWT_PASSPHRASE: ' . ($_ENV['JWT_PASSPHRASE'] ?? 'NOT SET'));
+            error_log('$_SERVER JWT_PASSPHRASE: ' . ($_SERVER['JWT_PASSPHRASE'] ?? 'NOT SET'));
+            error_log('getenv JWT_PASSPHRASE: ' . (getenv('JWT_PASSPHRASE') ?: 'NOT SET'));
+            
+            // Also check if the passphrase is being passed correctly
+            $passphrase = $_ENV['JWT_PASSPHRASE'] ?? '';
+            error_log('Passphrase length: ' . strlen($passphrase));
+            error_log('Passphrase first 10 chars: ' . substr($passphrase, 0, 10));
 
             $privateKeyPath = $this->getParameter('kernel.project_dir') . '/config/jwt/private.pem';
 
-            // Debug: Check PHP extensions and OpenSSL
-            error_log('OpenSSL loaded: ' . (extension_loaded('openssl') ? 'YES' : 'NO'));
-            error_log('PHP version: ' . phpversion());
-            
-
-
-            // Test if we can read the private key content
-            $privateKeyContent = file_get_contents($privateKeyPath);
-            error_log('Private key content length: ' . strlen($privateKeyContent));
-            error_log('Private key starts with: ' . substr($privateKeyContent, 0, 50));
+            $privateKey = openssl_pkey_get_private(file_get_contents($privateKeyPath), $passphrase);
                 
             // Test OpenSSL directly
             $privateKey = openssl_pkey_get_private(file_get_contents($privateKeyPath), $_ENV['JWT_PASSPHRASE'] ?? '');
