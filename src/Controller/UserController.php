@@ -83,58 +83,22 @@ class UserController extends AbstractController
         $password = $data['password'];
 
         if (!$email || !$password) {
-            return $this->json(['errors' => 'Both email and password are required'], JsonResponse::HTTP_BAD_REQUEST);
+            return $this->json(['errors' => 'Both email and password are required.'], JsonResponse::HTTP_BAD_REQUEST);
         }
 
         try {
             /** @var User */
             $user = $userProvider->loadUserByIdentifier($email);
         } catch (UserNotFoundException $e) {
-            return $this->json(['errors' => 'Email and password do not match'], JsonResponse::HTTP_UNAUTHORIZED);
+            return $this->json(['errors' => 'Email and password do not match.'], JsonResponse::HTTP_UNAUTHORIZED);
         }
 
         if (!$passwordHasher->isPasswordValid($user, $password)) {
-            return $this->json(['errors' => 'Email and password do not match'], JsonResponse::HTTP_UNAUTHORIZED);
+            return $this->json(['errors' => 'Email and password do not match.'], JsonResponse::HTTP_UNAUTHORIZED);
         }
 
-        try {
-            error_log('$_ENV JWT_PASSPHRASE: ' . ($_ENV['JWT_PASSPHRASE'] ?? 'NOT SET'));
-            error_log('$_SERVER JWT_PASSPHRASE: ' . ($_SERVER['JWT_PASSPHRASE'] ?? 'NOT SET'));
-            error_log('getenv JWT_PASSPHRASE: ' . (getenv('JWT_PASSPHRASE') ?: 'NOT SET'));
+        $token = $jwtManager->create($user);
             
-            // Also check if the passphrase is being passed correctly
-            $passphrase = $_ENV['JWT_PASSPHRASE'] ?? '';
-            error_log('Passphrase length: ' . strlen($passphrase));
-            error_log('Passphrase first 10 chars: ' . substr($passphrase, 0, 10));
-
-            $privateKeyPath = $this->getParameter('kernel.project_dir') . '/config/jwt/private.pem';
-
-            $privateKey = openssl_pkey_get_private(file_get_contents($privateKeyPath), $passphrase);
-                
-            // Test OpenSSL directly
-            $privateKey = openssl_pkey_get_private(file_get_contents($privateKeyPath), $_ENV['JWT_PASSPHRASE'] ?? '');
-            if (!$privateKey) {
-                error_log('OpenSSL Error: ' . openssl_error_string());
-                return $this->json(['errors' => 'OpenSSL key error'], JsonResponse::HTTP_INTERNAL_SERVER_ERROR);
-            }
-            error_log('OpenSSL key loaded successfully');
-
-            $token = $jwtManager->create($user);
-            
-            error_log('Token created: ' . ($token ? 'YES' : 'NO'));
-            error_log('Token length: ' . strlen($token ?? ''));
-            
-            if (empty($token)) {
-                error_log('JWT token is empty!');
-                return $this->json(['errors' => 'Failed to create authentication token'], JsonResponse::HTTP_INTERNAL_SERVER_ERROR);
-            }
-        
-        } catch (\Exception $e) {
-            error_log('JWT Error: ' . $e->getMessage());
-            error_log('JWT Class: ' . get_class($e));
-            return $this->json(['errors' => 'Authentication system error: ' . $e->getMessage()], JsonResponse::HTTP_INTERNAL_SERVER_ERROR);
-        }    
-        
         return $this->json(['user' => $user, 'token' => $token], 200, context: ["groups" => ["user_read"]]);
     }
 
