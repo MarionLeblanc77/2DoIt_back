@@ -192,25 +192,25 @@ class TaskController extends AbstractController
         error_log('Step 3: Getting user sections');
 
         $userSections = $user->getSections();
-                error_log('Step 3.1: User has ' . $userSections->count() . ' sections');
+        error_log('Step 3.1: User has ' . $userSections->count() . ' sections');
         
         error_log('Step 4: Looking for share section');
         $shareSection = $sectionRepository->findOneByTitle('From '.$connectedUserName);
         if (!$userSections->contains($shareSection)) {
-                        error_log('Step 5: Creating new share section');
+            error_log('Step 5: Creating new share section');
 
             $shareSection = new Section();
             $shareSection->setTitle('From '.$connectedUserName);
-                        error_log('Step 5.1: Adding section to user');
+            error_log('Step 5.1: Adding section to user');
 
-            $user->addSection($shareSection);
-                        error_log('Step 5.1.1: Adding section to task');
+            $shareSection->setUser($user);
+            error_log('Step 5.1.1: Adding section to task');
 
-            $task->addSection($shareSection);
-                                    error_log('Step 5.2: Persisting section');
+            $shareSection->addTask($task);
+            error_log('Step 5.2: Persisting section');
 
             $em->persist($shareSection);
-                        error_log('Step 5.3: Flushing section');
+            error_log('Step 5.3: Flushing section');
 
             $em->flush();
         }
