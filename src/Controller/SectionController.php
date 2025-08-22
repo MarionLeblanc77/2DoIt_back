@@ -106,8 +106,28 @@ class SectionController extends AbstractController
     }
 
     #[Route('/section/{id<\d+>}', name: 'delete', methods: "DELETE")]
-    public function delete(Section $section, EntityManagerInterface $em): JsonResponse
+    public function delete(
+        Section $section, 
+        EntityManagerInterface $em,
+        TokenStorageInterface $tokenStorage): JsonResponse
     {
+        foreach ($section->getTasks() as $task) {
+            if ($task->getUsers()->count() > 1) {
+                try{
+                $token = $tokenStorage->getToken();
+                /** @var User */
+                $user = $token->getUser();
+                $user->removeTask($task);
+                $task->setActive(false);
+                $em->flush();
+                } catch (\Exception $e) {
+                    return $this->json(['error' => 'Error :'.$e], Response::HTTP_NOT_FOUND);
+                }
+            } else {
+                $em->remove($task);
+                $em->flush();
+            }
+        }
         $em->remove($section);
         $em->flush();
         

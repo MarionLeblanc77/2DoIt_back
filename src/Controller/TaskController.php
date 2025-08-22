@@ -5,6 +5,7 @@ namespace App\Controller;
 use App\Entity\Section;
 use App\Entity\Task;
 use App\Entity\User;
+use App\Repository\SectionRepository;
 use App\Repository\TaskRepository;
 use App\Repository\UserRepository;
 use DateTimeImmutable;
@@ -142,20 +143,61 @@ class TaskController extends AbstractController
     }
 
     #[Route('/task/{id<\d+>}', name: 'delete', methods: "DELETE")]
-    public function delete(Task $task, EntityManagerInterface $em): JsonResponse
+    public function delete(
+        Task $task, 
+        EntityManagerInterface $em, 
+        TokenStorageInterface $tokenStorage, 
+        SectionRepository $sectionRepository): JsonResponse
     {
-        $em->remove($task);
-        $em->flush();
-        
-        return $this->json(['success' => 'Task deleted successfully.'], JsonResponse::HTTP_OK);
+        if ($task->getUsers()->count() > 1) {
+            try{
+            $token = $tokenStorage->getToken();
+            /** @var User */
+            $user = $token->getUser();
+            $toRemoveSection = $sectionRepository->findOneByTaskAndUser($task->getId(), $user->getId());
+            $user->removeTask($task);
+            $toRemoveSection->removeTask($task);
+            $task->setActive(false);
+            $em->flush();
+            return $this->json(['user'=> $user, 'toremove'=> $toRemoveSection], JsonResponse::HTTP_OK, [], ["groups" => ["user_read","section_read"]]);
+            } catch (\Exception $e) {
+                return $this->json(['error' => 'Error :'.$e], Response::HTTP_NOT_FOUND);
+            }
+        } else {
+            $em->remove($task);
+            $em->flush();
+            return $this->json(['success' => 'Task deleted successfully.'], JsonResponse::HTTP_OK);
+        }
     }
 
     #[Route('/task/{task<\d+>}/user/{user<\d+>}', name: 'add_user', methods: "POST")]
-    public function addUserToTask(Task $task, User $user, EntityManagerInterface $em): JsonResponse
+    public function addUserToTask(
+        Task $task, User $user,
+        EntityManagerInterface $em, 
+        TokenStorageInterface $tokenStorage, 
+        SectionRepository $sectionRepository): JsonResponse
     {
         if ($task->getUsers()->contains($user)) {
             return $this->json(['error' => 'User already has this task.'], Response::HTTP_NOT_FOUND);
         }
+
+        $token = $tokenStorage->getToken();
+        /** @var User */
+        $connectedUser = $token->getUser();
+        $connectedUserName = $connectedUser->getFirstName().' '.$connectedUser->getLastName();
+
+        $userSections = $user->getSections();
+        $shareSection = $sectionRepository->findOneByTitle('From '.$connectedUserName);
+        if (!$userSections->contains($shareSection)) {
+            $shareSection = new Section();
+            $shareSection->setTitle('From '.$connectedUserName);
+            $user->addSection($shareSection);
+            $task->addSection($shareSection);
+            $em->persist($shareSection);
+            $em->flush();
+        }
+
+        $task->addSection($shareSection);
         $task->addUser($user);
         $em->persist($task);
         $em->flush();
@@ -164,11 +206,18 @@ class TaskController extends AbstractController
     }
 
     #[Route('/task/{task<\d+>}/user/{user<\d+>}', name: 'delete_user', methods: "DELETE")]
-    public function deleteUserFromTask(Task $task, User $user, EntityManagerInterface $em): JsonResponse
+    public function deleteUserFromTask(Task $task, User $user, EntityManagerInterface $em, SectionRepository $sectionRepository): JsonResponse
     {
         if (!$task->getUsers()->contains($user)) {
             return $this->json(['error' => 'User not found in task.'], Response::HTTP_NOT_FOUND);
         }
+        try {
+        $toRemoveSection = $sectionRepository->findOneByTaskAndUser($task->getId(), $user->getId());
+        $toRemoveSection->removeTask($task);
+        } catch (\Exception $e) {
+            return $this->json(['error' => 'Section not found.'.$e], Response::HTTP_NOT_FOUND);
+        }
+
         $task->removeUser($user);
         $em->flush();
 

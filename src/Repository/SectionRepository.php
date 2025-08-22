@@ -48,13 +48,26 @@ class SectionRepository extends ServiceEntityRepository
     //        ;
     //    }
 
-    //    public function findOneBySomeField($value): ?Section
-    //    {
-    //        return $this->createQueryBuilder('s')
-    //            ->andWhere('s.exampleField = :val')
-    //            ->setParameter('val', $value)
-    //            ->getQuery()
-    //            ->getOneOrNullResult()
-    //        ;
-    //    }
+       public function findOneByTitle($value): ?Section
+       {
+           return $this->createQueryBuilder('s')
+               ->andWhere('s.title = :val')
+               ->setParameter('val', $value)
+               ->getQuery()
+               ->getOneOrNullResult()
+           ;
+       }
+
+        public function findOneByTaskAndUser(int $taskId, int $userId): ?Section
+       {
+           return $this->createQueryBuilder('s')
+                ->innerJoin('s.tasks', 't')
+                ->andWhere('s.user = :userId')
+                ->andWhere('t.id = :taskId')
+                ->setParameter('taskId', $taskId)
+                ->setParameter('userId', $userId)
+                ->getQuery()
+                ->getOneOrNullResult()
+           ;
+       }
 }
