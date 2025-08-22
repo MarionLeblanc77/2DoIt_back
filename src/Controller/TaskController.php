@@ -177,60 +177,32 @@ class TaskController extends AbstractController
         TokenStorageInterface $tokenStorage, 
         SectionRepository $sectionRepository): JsonResponse
     {
-    try {
-        error_log('Step 1: Starting addUserToTask');
+
         if ($task->getUsers()->contains($user)) {
             return $this->json(['error' => 'User already has this task.'], Response::HTTP_NOT_FOUND);
         }
-        error_log('Step 2: Getting connected user');
-
         $token = $tokenStorage->getToken();
         /** @var User */
         $connectedUser = $token->getUser();
         $connectedUserName = $connectedUser->getFirstName().' '.$connectedUser->getLastName();
-        error_log('Step 2.1: Connected user: ' . $connectedUserName);
-        error_log('Step 3: Getting user sections');
-
         $userSections = $user->getSections();
-        error_log('Step 3.1: User has ' . $userSections->count() . ' sections');
         
-        error_log('Step 4: Looking for share section');
         $shareSection = $sectionRepository->findOneByTitle('From '.$connectedUserName);
         if (!$userSections->contains($shareSection)) {
-            error_log('Step 5: Creating new share section');
-
             $shareSection = new Section();
             $shareSection->setTitle('From '.$connectedUserName);
-            error_log('Step 5.1: Adding section to user');
-
             $shareSection->setUser($user);
-            error_log('Step 5.1.1: Adding section to task');
-
             $shareSection->addTask($task);
-            error_log('Step 5.2: Persisting section');
-
             $em->persist($shareSection);
-            error_log('Step 5.3: Flushing section');
-
             $em->flush();
         }
-        error_log('Step 6: Adding task to section');
         $task->addSection($shareSection);
-
-        error_log('Step 7: Adding user to task');
         $task->addUser($user);
-
-        error_log('Step 8: Persisting task');
         $em->persist($task);
-        error_log('Step 9: Final flush');
         $em->flush();
 
-        error_log('Step 10: Success!');
-        return $this->json(['success' => 'User added to task successfully.'], JsonResponse::HTTP_OK);    } catch (\Exception $e) {
-        error_log('ERROR in addUserToTask: ' . $e->getMessage());
-        error_log('ERROR trace: ' . $e->getTraceAsString());
-        return $this->json(['error' => 'Internal error: ' . $e->getMessage()], Response::HTTP_INTERNAL_SERVER_ERROR);
-    }
+        return $this->json(['success' => 'User added to task successfully.'], JsonResponse::HTTP_OK);
+    
     }
 
     #[Route('/task/{task<\d+>}/user/{user<\d+>}', name: 'delete_user', methods: "DELETE")]
