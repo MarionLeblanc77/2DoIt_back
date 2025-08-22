@@ -177,6 +177,7 @@ class TaskController extends AbstractController
         TokenStorageInterface $tokenStorage, 
         SectionRepository $sectionRepository): JsonResponse
     {
+        try{
         if ($task->getUsers()->contains($user)) {
             return $this->json(['error' => 'User already has this task.'], Response::HTTP_NOT_FOUND);
         }
@@ -202,7 +203,9 @@ class TaskController extends AbstractController
         $em->persist($task);
         $em->flush();
 
-        return $this->json(['success' => 'User added to task successfully.'], JsonResponse::HTTP_OK);
+        return $this->json(['success' => 'User added to task successfully.'], JsonResponse::HTTP_OK);} catch (\Exception $e) {
+            return $this->json(['error' => 'Error :'.$e], Response::HTTP_NOT_FOUND);
+        }
     }
 
     #[Route('/task/{task<\d+>}/user/{user<\d+>}', name: 'delete_user', methods: "DELETE")]
