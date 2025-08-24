@@ -149,17 +149,18 @@ class TaskController extends AbstractController
         TokenStorageInterface $tokenStorage, 
         SectionRepository $sectionRepository): JsonResponse
     {
+        try{
         if ($task->getUsers()->count() > 1) {
             try{
-            $token = $tokenStorage->getToken();
-            /** @var User */
-            $user = $token->getUser();
-            $toRemoveSection = $sectionRepository->findOneByTaskAndUser($task->getId(), $user->getId());
-            $user->removeTask($task);
-            $toRemoveSection->removeTask($task);
-            $task->setActive(false);
-            $em->flush();
-            return $this->json(['user'=> $user, 'toremove'=> $toRemoveSection], JsonResponse::HTTP_OK, [], ["groups" => ["user_read","section_read"]]);
+                $token = $tokenStorage->getToken();
+                /** @var User */
+                $user = $token->getUser();
+                $toRemoveSection = $sectionRepository->findOneByTaskAndUser($task->getId(), $user->getId());
+                $user->removeTask($task);
+                $toRemoveSection->removeTask($task);
+                $task->setActive(false);
+                $em->flush();
+                return $this->json(['user'=> $user, 'toremove'=> $toRemoveSection], JsonResponse::HTTP_OK, [], ["groups" => ["user_read","section_read"]]);
             } catch (\Exception $e) {
                 return $this->json(['error' => 'Error :'.$e], Response::HTTP_NOT_FOUND);
             }
@@ -167,12 +168,15 @@ class TaskController extends AbstractController
             $em->remove($task);
             $em->flush();
             return $this->json(['success' => 'Task deleted successfully.'], JsonResponse::HTTP_OK);
+        }} catch (\Exception $e) {
+            return $this->json(['error' => 'Error :'.$e], Response::HTTP_NOT_FOUND);
         }
     }
 
     #[Route('/task/{task<\d+>}/user/{user<\d+>}', name: 'add_user', methods: "POST")]
     public function addUserToTask(
-        Task $task, User $user,
+        Task $task, 
+        User $user,
         EntityManagerInterface $em, 
         TokenStorageInterface $tokenStorage, 
         SectionRepository $sectionRepository): JsonResponse
@@ -196,13 +200,13 @@ class TaskController extends AbstractController
             $em->persist($shareSection);
             $em->flush();
         }
+
         $task->addSection($shareSection);
         $task->addUser($user);
         $em->persist($task);
         $em->flush();
 
         return $this->json(['success' => 'User added to task successfully.'], JsonResponse::HTTP_OK);
-    
     }
 
     #[Route('/task/{task<\d+>}/user/{user<\d+>}', name: 'delete_user', methods: "DELETE")]
