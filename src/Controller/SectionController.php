@@ -39,9 +39,7 @@ class SectionController extends AbstractController
         $token = $tokenStorage->getToken();
         /** @var User */
         $user = $token->getUser();
-        // TODO: Check which one is faster in time and number of queries to database
-        $sections = $sectionRepository->findBy(['user' => $user]);
-        // $sections = $sectionRepository->findByUser($user->getId());
+        $sections = $sectionRepository->findByUser($user->getId());
         return $this->json($sections, Response::HTTP_OK, [], ["groups" => ["user_section_read"]]);
     }
 
