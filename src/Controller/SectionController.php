@@ -103,6 +103,53 @@ class SectionController extends AbstractController
         return $this->json(['success' => 'Section modified successfully.', 'section' => $section], JsonResponse::HTTP_OK, [], ["groups" => ["section_read"]]);
     }
 
+    #[Route('/sections/positions', name: 'edit_positions', methods: "PUT")]
+    public function editPositions(
+        EntityManagerInterface $em, 
+        Request $request, 
+        SerializerInterface $serializer, 
+        ValidatorInterface $validator,
+        SectionRepository $sectionRepository,
+        TokenStorageInterface $tokenStorage) : JsonResponse
+    {
+        $token = $tokenStorage->getToken();
+        /** @var User */
+        $user = $token->getUser();
+        $data = json_decode($request->getContent(),true);
+        $updatedSections = [];
+
+        foreach ($data as $item) {
+            $section = $sectionRepository->find($item['id']);
+            if ($section) {
+                if ($section->getUser() !== $user) {
+                    return $this->json(['error' => 'You do not own section with id '.$item['id']], Response::HTTP_FORBIDDEN);
+                }
+                $updatedSection = $serializer->deserialize(
+                    json_encode($item), 
+                    type: Section::class, 
+                    format: 'json', 
+                    context: [AbstractNormalizer::OBJECT_TO_POPULATE => $section]
+                );
+                $errors = $validator->validate($updatedSection);
+                $errorReadable = [];
+                foreach ($errors as $currentError) {
+                    $errorReadable[] = $currentError->getMessage();
+                }
+                if (count($errors) > 0) {
+                    return $this->json(['errors on section with id '.$item['id'] => $errorReadable], status: Response::HTTP_BAD_REQUEST);
+                }
+                $em->persist($section);
+                $updatedSections[] = $section;
+            } else {
+                return $this->json(['error' => 'Section with id '.$item['id'].' not found.'], status: Response::HTTP_NOT_FOUND);
+            }
+        }
+
+        $em->flush();
+
+        return $this->json(['success' => 'Section repositionned successfully.', 'sections' => $updatedSections], JsonResponse::HTTP_OK, [], ["groups" => ["section_read"]]);
+    }
+
     #[Route('/section/{id<\d+>}', name: 'delete', methods: "DELETE")]
     public function delete(
         Section $section, 

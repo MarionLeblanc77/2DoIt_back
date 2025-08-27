@@ -22,6 +22,10 @@ class Section
     #[AttributeGroups(['section_read','user_section_read'])]
     private ?string $title = null;
 
+    #[ORM\Column(nullable: true)]
+    #[AttributeGroups(['section_read', 'user_section_read'])]
+    private ?int $position = null;
+    
     #[ORM\Column]
     private ?\DateTimeImmutable $created_at = null;
 
@@ -59,6 +63,18 @@ class Section
     public function setTitle(?string $title): static
     {
         $this->title = $title;
+
+        return $this;
+    }
+    
+    public function getPosition(): ?int
+    {
+        return $this->position;
+    }
+
+    public function setPosition(?int $position): static
+    {
+        $this->position = $position;
 
         return $this;
     }

@@ -24,9 +24,9 @@ symfony server:start
 After a change in the entities, affecting the database, run:
 
 ```bash
-(optional, to check the current mappings for valid forward and reverse mappings ) bin/console doctrine:schema:validate
-bin/console make:migration
-bin/console doctrine:migrations:migrate
+(optional, to check the current mappings for valid forward and reverse mappings ) php bin/console doctrine:schema:validate
+php bin/console make:migration
+php bin/console doctrine:migrations:migrate
 ```
 
 #### DEBUG (to fix)
@@ -38,8 +38,8 @@ Remove-Item -Recurse -Force var\cache
 ```
 
 ```bash
-bin/console cache:clear --env=dev
-bin/console cache:warmup --env=dev
+php bin/console cache:clear --env=dev
+php bin/console cache:warmup --env=dev
 ```
 
 Issue with token jwt:
