@@ -22,10 +22,6 @@ class SectionRepository extends ServiceEntityRepository
     public function findByUser($userId): array
     {
         return $this->createQueryBuilder('section')
-            ->innerJoin('section.tasks', 'task')
-            ->innerJoin('task.users', 'user')
-            ->addSelect('task')
-            ->addSelect('user')
             ->andWhere('section.user = :userId')
             ->setParameter('userId', $userId)
             ->getQuery()
