@@ -154,8 +154,14 @@ class SectionController extends AbstractController
     public function delete(
         Section $section, 
         EntityManagerInterface $em,
-        TokenStorageInterface $tokenStorage): JsonResponse
+        TokenStorageInterface $tokenStorage,
+        SectionRepository $sectionRepository): JsonResponse
     {
+        $token = $tokenStorage->getToken();
+        /** @var User */
+        $user = $token->getUser();
+
+
         foreach ($section->getTasks() as $task) {
             if ($task->getUsers()->count() > 1) {
                 try{
@@ -173,9 +179,27 @@ class SectionController extends AbstractController
                 $em->flush();
             }
         }
+
+        $impactedSections = $sectionRepository->findAboveByPosition($section->getPosition(), $user);
+        if ($impactedSections === null) {
+            $impactedSections = [];
+        } else {
+            foreach ($impactedSections as $impactedSection) {
+                $impactedSection->setPosition($impactedSection->getPosition() - 1);
+                $em->persist($impactedSection);
+            }
+        }
+        $sectionsData = [];
+        foreach ($impactedSections as $impactedSection) {
+            $sectionsData[] = [
+            'id' => $impactedSection->getId(),
+            'position' => $impactedSection->getPosition()
+            ];
+        }
+
         $em->remove($section);
         $em->flush();
         
-        return $this->json(['success' => 'Section deleted successfully.'], JsonResponse::HTTP_OK);
+        return $this->json(['success' => 'Section deleted successfully.', 'sections' => $sectionsData], JsonResponse::HTTP_OK);
     }
 }
