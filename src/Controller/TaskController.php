@@ -8,9 +8,12 @@ use App\Entity\Task;
 use App\Entity\User;
 use App\Repository\SectionHasTasksRepository;
 use App\Repository\SectionRepository;
+use App\Repository\TaskRepository;
 use App\Repository\UserRepository;
 use DateTimeImmutable;
 use Doctrine\ORM\EntityManagerInterface;
+use phpDocumentor\Reflection\DocBlock\Tags\See;
+use Random\Engine\Secure;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
@@ -129,7 +132,7 @@ class TaskController extends AbstractController
         return $this->json(['success' => 'Task modified successfully.', 'task'=>$task], JsonResponse::HTTP_OK, [], ["groups" => ["task_read"]]);
     }
 
-        #[Route('/task/{id<\d+>}/toggle', name: 'toggle_active', methods: "PUT")]
+    #[Route('/task/{id<\d+>}/toggle', name: 'toggle_active', methods: "PUT")]
     public function toggleActive(
         EntityManagerInterface $em,  
         Task $task) : JsonResponse
@@ -142,52 +145,68 @@ class TaskController extends AbstractController
         return $this->json(['success' => 'Active status modified successfully.', 'task'=>$task], JsonResponse::HTTP_OK, [], ["groups" => ["task_toggle_active"]]);
     }
 
-    // #[Route('/sections/positions', name: 'edit_positions', methods: "PUT")]
-    // public function editPositions(
-    //     EntityManagerInterface $em, 
-    //     Request $request, 
-    //     SerializerInterface $serializer, 
-    //     ValidatorInterface $validator,
-    //     SectionRepository $sectionRepository,
-    //     TokenStorageInterface $tokenStorage) : JsonResponse
-    // {
-    //     $token = $tokenStorage->getToken();
-    //     /** @var User */
-    //     $user = $token->getUser();
-    //     $data = json_decode($request->getContent(),true);
-    //     $updatedSections = [];
+    #[Route('/tasks/positions', name: 'edit_positions', methods: "PUT")]
+    public function editPositions(
+        EntityManagerInterface $em, 
+        Request $request, 
+        ValidatorInterface $validator,
+        TaskRepository $taskRepository,
+        SectionRepository $sectionRepository,
+        SectionHasTasksRepository $sectionHasTasksRepository,
+        TokenStorageInterface $tokenStorage) : JsonResponse
+    {
+        $token = $tokenStorage->getToken();
+        /** @var User */
+        $user = $token->getUser();
+        $data = json_decode($request->getContent(),true);
+        $updatedTaskAndUserSectionLinks = [];
+        $previousSectionId = $data[0]['previousSectionId'];
+        $newSectionId = $data[1]['newSectionId'];
+        $previousSection = $sectionRepository->find($previousSectionId);
+        $newSection = $sectionRepository->find($newSectionId);
 
-    //     foreach ($data as $item) {
-    //         $section = $sectionRepository->find($item['id']);
-    //         if ($section) {
-    //             if ($section->getUser() !== $user) {
-    //                 return $this->json(['error' => 'You do not own section with id '.$item['id']], Response::HTTP_FORBIDDEN);
-    //             }
-    //             $updatedSection = $serializer->deserialize(
-    //                 json_encode($item), 
-    //                 type: Section::class, 
-    //                 format: 'json', 
-    //                 context: [AbstractNormalizer::OBJECT_TO_POPULATE => $section]
-    //             );
-    //             $errors = $validator->validate($updatedSection);
-    //             $errorReadable = [];
-    //             foreach ($errors as $currentError) {
-    //                 $errorReadable[] = $currentError->getMessage();
-    //             }
-    //             if (count($errors) > 0) {
-    //                 return $this->json(['errors on section with id '.$item['id'] => $errorReadable], status: Response::HTTP_BAD_REQUEST);
-    //             }
-    //             $em->persist($section);
-    //             $updatedSections[] = $section;
-    //         } else {
-    //             return $this->json(['error' => 'Section with id '.$item['id'].' not found.'], status: Response::HTTP_NOT_FOUND);
-    //         }
-    //     }
+        if (!$previousSection || !$newSection) {
+            return $this->json(['error' => 'Section not found'], Response::HTTP_NOT_FOUND);
+        }
+        
+        if ($previousSection->getUser()->getId() !== $user->getId() || $newSection->getUser()->getId() !== $user->getId()) {
+            return $this->json(['error' => 'You do not own at least one of the sections with id '.$previousSectionId.' or '.$newSectionId], Response::HTTP_FORBIDDEN);
+        }
 
-    //     $em->flush();
+        foreach ($data as $sectionData) {
+            foreach ($sectionData['positions'] as $item) {
+                $task = $taskRepository->find($item['id']);
+                if ($task && $task->getUsers()->contains($user)) {
+                    $taskAndUserSectionLink = $sectionHasTasksRepository->findOneByTaskAndUser($task->getId(), $user->getId());
+                    $taskAndUserSectionLink->setPosition($item['position']);
 
-    //     return $this->json(['success' => 'Section repositionned successfully.', 'sections' => $updatedSections], JsonResponse::HTTP_OK, [], ["groups" => ["section_with_tasks"]]);
-    // }
+                    if(isset($sectionData['newSectionId']) && $taskAndUserSectionLink->getSection()->getId() != $newSectionId){
+                        if(!$newSection){
+                            return $this->json(['error' => 'Section with id '.$newSectionId.' not found.'], status: Response::HTTP_NOT_FOUND);
+                        }
+                        $taskAndUserSectionLink->setSection($newSection);
+                    }
+
+                    $errors = $validator->validate($taskAndUserSectionLink);
+                    $errorReadable = [];
+                    foreach ($errors as $currentError) {
+                        $errorReadable[] = $currentError->getMessage();
+                    }
+                    if (count($errors) > 0) {
+                        return $this->json(['errors on task with id '.$item['id'] => $errorReadable], status: Response::HTTP_BAD_REQUEST);
+                    }
+                    $em->persist($taskAndUserSectionLink);
+                    $updatedTaskAndUserSectionLinks[] = $taskAndUserSectionLink;
+                } else {
+                    return $this->json(['error' => 'Task with id '.$item['id'].' not found or does not belong to user.'], status: Response::HTTP_NOT_FOUND);
+                }
+            }
+        }
+
+        $em->flush();
+
+        return $this->json(['success' => 'Task repositionned successfully.', 'tasks and section links' => $updatedTaskAndUserSectionLinks], JsonResponse::HTTP_OK, [], ["groups" => ["section_with_tasks_sections"]]);
+    }
 
     #[Route('/task/{id<\d+>}', name: 'delete', methods: "DELETE")]
     public function delete(
