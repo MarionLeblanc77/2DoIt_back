@@ -20,19 +20,6 @@ use Symfony\Component\Validator\Validator\ValidatorInterface;
 #[Route('/api', name: 'api_section')]
 class SectionController extends AbstractController
 {
-    #[Route('/sections', name: 'browse', methods: "GET")]
-    public function browse(SectionRepository $sectionRepository): Response
-    {
-        $sections = $sectionRepository->findAll();
-        return $this->json($sections, Response::HTTP_OK, [], ["groups" => ["section_read"]]);
-    }
-
-    #[Route('/section/{id<\d+>}', name: 'read', methods: "GET")]
-    public function findOne(Section $section): Response
-    {
-        return $this->json($section, Response::HTTP_OK, [], ["groups" => ["section_read"]]);
-    }
-
     #[Route('/usersections', name: 'user_browse', methods: "GET")]
     public function browseUser(TokenStorageInterface $tokenStorage, SectionRepository $sectionRepository): Response
     {
@@ -40,7 +27,7 @@ class SectionController extends AbstractController
         /** @var User */
         $user = $token->getUser();
         $sections = $sectionRepository->findByUser($user->getId());
-        return $this->json($sections, Response::HTTP_OK, [], ["groups" => ["user_section_read"]]);
+        return $this->json($sections, Response::HTTP_OK, [], ["groups" => ["section_with_tasks"]]);
     }
 
     #[Route('/section', name: 'add', methods: "POST")]
@@ -72,7 +59,7 @@ class SectionController extends AbstractController
         $em->persist($section);
         $em->flush();
 
-        return $this->json(['success' => 'Section added successfully.', 'section' => $section], JsonResponse::HTTP_OK, [], ["groups" => ["section_read"]]);
+        return $this->json(['success' => 'Section added successfully.', 'section' => $section], JsonResponse::HTTP_OK, [], ["groups" => ["section_with_tasks"]]);
     }
 
     #[Route('/section/{id<\d+>}', name: 'edit', methods: "PUT")]
@@ -100,7 +87,7 @@ class SectionController extends AbstractController
         $em->persist($updatedSection);
         $em->flush();
 
-        return $this->json(['success' => 'Section modified successfully.', 'section' => $section], JsonResponse::HTTP_OK, [], ["groups" => ["section_read"]]);
+        return $this->json(['success' => 'Section modified successfully.', 'section' => $section], JsonResponse::HTTP_OK, [], ["groups" => ["section_with_tasks"]]);
     }
 
     #[Route('/sections/positions', name: 'edit_positions', methods: "PUT")]
@@ -147,7 +134,7 @@ class SectionController extends AbstractController
 
         $em->flush();
 
-        return $this->json(['success' => 'Section repositionned successfully.', 'sections' => $updatedSections], JsonResponse::HTTP_OK, [], ["groups" => ["section_read"]]);
+        return $this->json(['success' => 'Section repositionned successfully.', 'sections' => $updatedSections], JsonResponse::HTTP_OK, [], ["groups" => ["section_with_tasks"]]);
     }
 
     #[Route('/section/{id<\d+>}', name: 'delete', methods: "DELETE")]
@@ -162,7 +149,8 @@ class SectionController extends AbstractController
         $user = $token->getUser();
 
 
-        foreach ($section->getTasks() as $task) {
+        foreach ($section->getHasTasks() as $hasTask) {
+            $task = $hasTask->getTask();
             if ($task->getUsers()->count() > 1) {
                 try{
                 $token = $tokenStorage->getToken();
@@ -180,7 +168,7 @@ class SectionController extends AbstractController
             }
         }
 
-        $impactedSections = $sectionRepository->findAboveByPosition($section->getPosition(), $user);
+        $impactedSections = $sectionRepository->findHigherByPosition($section->getPosition(), $user);
         if ($impactedSections === null) {
             $impactedSections = [];
         } else {

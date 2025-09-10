@@ -3,6 +3,7 @@
 namespace App\Repository;
 
 use App\Entity\Section;
+use App\Entity\SectionHasTasks;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
 
@@ -29,7 +30,7 @@ class SectionRepository extends ServiceEntityRepository
         ;
     }
 
-    public function findAboveByPosition($val, $userId): array
+    public function findHigherByPosition($val, $userId): array
     {
         return $this->createQueryBuilder('s')
             ->andWhere('s.position > :val')
@@ -46,19 +47,6 @@ class SectionRepository extends ServiceEntityRepository
         return $this->createQueryBuilder('s')
             ->andWhere('s.title = :val')
             ->setParameter('val', $value)
-            ->getQuery()
-            ->getOneOrNullResult()
-        ;
-    }
-
-    public function findOneByTaskAndUser(int $taskId, int $userId): ?Section
-    {
-        return $this->createQueryBuilder('s')
-            ->innerJoin('s.tasks', 't')
-            ->andWhere('s.user = :userId')
-            ->andWhere('t.id = :taskId')
-            ->setParameter('taskId', $taskId)
-            ->setParameter('userId', $userId)
             ->getQuery()
             ->getOneOrNullResult()
         ;

@@ -19,7 +19,7 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column]
-    #[AttributeGroups(['user_read', 'task_read',"user_section_read", "user_contacts"])]
+    #[AttributeGroups(['user_read', 'task_read',"section_with_tasks", "user_contacts"])]
     private ?int $id = null;
 
     #[ORM\Column(length: 255)]
@@ -40,11 +40,11 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     private ?string $password = null;
 
     #[ORM\Column(length: 255)]
-    #[AttributeGroups(['user_read', 'task_read', "user_section_read", "user_contacts"])]
+    #[AttributeGroups(['user_read', 'task_read', "section_with_tasks", "user_contacts"])]
     private ?string $first_name = null;
 
     #[ORM\Column(length: 255)]
-    #[AttributeGroups(['user_read', 'task_read',  "user_section_read", "user_contacts"])]
+    #[AttributeGroups(['user_read', 'task_read',  "section_with_tasks", "user_contacts"])]
     private ?string $last_name = null;
 
     #[ORM\Column]
@@ -59,18 +59,21 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
      * @var Collection<int, Task>
      */
     #[ORM\ManyToMany(targetEntity: Task::class, inversedBy: 'users', cascade: ['persist'])]
+    #[AttributeGroups(['user_default'])]
     private Collection $tasks;
 
     /**
      * @var Collection<int, Section>
      */
     #[ORM\OneToMany(targetEntity: Section::class, mappedBy: 'user', orphanRemoval: true)]
+    #[AttributeGroups(['user_default'])]
     private Collection $sections;
 
     /**
      * @var Collection<int, self>
      */
     #[ORM\ManyToMany(targetEntity: self::class, inversedBy: 'users')]
+    #[AttributeGroups(['user_default'])]
     private Collection $users;
 
     public function __construct()

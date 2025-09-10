@@ -102,13 +102,6 @@ class UserController extends AbstractController
         return $this->json(['user' => $user, 'token' => $token], 200, context: ["groups" => ["user_read"]]);
     }
 
-    #[Route('/users', name: 'browse', methods: "GET")]
-    public function browse(UserRepository $userRepository): Response
-    {
-        $users = $userRepository->findAll();
-        return $this->json($users, Response::HTTP_OK, [], ["groups" => ["user_read"]]);
-    }
-
     #[Route('/user', name: 'edit', methods: "PUT")]
     public function edit(
         EntityManagerInterface $em, 

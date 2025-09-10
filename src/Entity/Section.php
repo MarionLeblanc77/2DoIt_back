@@ -15,39 +15,40 @@ class Section
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column]
-    #[AttributeGroups(['section_read', 'user_section_read'])]
+    #[AttributeGroups(['section_with_tasks', 'section_from_link'])]
     private ?int $id = null;
 
     #[ORM\Column(length: 255, nullable: true)]
-    #[AttributeGroups(['section_read','user_section_read'])]
+    #[AttributeGroups(['section_with_tasks', 'section_from_link'])]
     private ?string $title = null;
 
     #[ORM\Column(nullable: true)]
-    #[AttributeGroups(['section_read', 'user_section_read'])]
+    #[AttributeGroups(['section_with_tasks'])]
     private ?int $position = null;
     
     #[ORM\Column]
     private ?\DateTimeImmutable $created_at = null;
 
     #[ORM\Column(nullable: true)]
-    #[AttributeGroups(['section_read', 'user_section_read'])]
+    #[AttributeGroups(['section_with_tasks'])]
     private ?\DateTimeImmutable $updated_at = null;
-
-    /**
-     * @var Collection<int, Task>
-     */
-    #[ORM\ManyToMany(targetEntity: Task::class, inversedBy: 'sections', cascade: ['persist'])]
-    #[AttributeGroups(['section_read', 'user_section_read'])]
-    private Collection $tasks;
 
     #[ORM\ManyToOne(inversedBy: 'sections')]
     #[ORM\JoinColumn(nullable: false)]
+    #[AttributeGroups(['section_default'])]
     private ?User $user = null;
+
+    /**
+     * @var Collection<int, SectionHasTasks>
+     */
+    #[ORM\OneToMany(targetEntity: SectionHasTasks::class, mappedBy: 'section', orphanRemoval: true)]
+    #[AttributeGroups(['section_with_tasks'])]
+    private Collection $hasTasks;
 
     public function __construct()
     {
         $this->created_at = new \DateTimeImmutable();
-        $this->tasks = new ArrayCollection();
+        $this->hasTasks = new ArrayCollection();
     }
 
     public function getId(): ?int
@@ -116,24 +117,31 @@ class Section
     }
 
     /**
-     * @return Collection<int, Task>
+     * @return Collection<int, SectionHasTasks>
      */
-    public function getTasks(): Collection
+    public function getHasTasks(): Collection
     {
-        return $this->tasks;
+        return $this->hasTasks;
     }
 
-    public function addTask(Task $task): self
+    public function addHasTask(SectionHasTasks $hasTask): static
     {
-        if(!$this->tasks->contains($task)) {
-           $this->tasks->add($task);
+        if (!$this->hasTasks->contains($hasTask)) {
+            $this->hasTasks->add($hasTask);
+            $hasTask->setSection($this);
         }
-        return $this;    
+
+        return $this;
     }
 
-    public function removeTask(Task $task): self
+    public function removeHasTask(SectionHasTasks $hasTask): static
     {
-        $this->tasks->removeElement($task);
+        if ($this->hasTasks->removeElement($hasTask)) {
+            if ($hasTask->getSection() === $this) {
+                $hasTask->setSection(null);
+            }
+        }
+
         return $this;
     }
 }

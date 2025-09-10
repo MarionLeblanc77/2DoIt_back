@@ -6,7 +6,6 @@ use App\Repository\TaskRepository;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\Mapping as ORM;
-use Doctrine\ORM\Mapping\JoinTable;
 use Symfony\Component\Serializer\Attribute\Groups as AttributeGroups;
 
 #[ORM\Entity(repositoryClass: TaskRepository::class)]
@@ -16,15 +15,15 @@ class Task
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column]
-    #[AttributeGroups(['task_read', 'user_section_read', 'task_toggle_active'])]
+    #[AttributeGroups(['task_read', 'section_with_tasks', 'task_toggle_active'])]
     private ?int $id = null;
 
     #[ORM\Column(length: 255)]
-    #[AttributeGroups(['task_read', 'user_section_read'])]
+    #[AttributeGroups(['task_read', 'section_with_tasks'])]
     private ?string $content = null;
     
     #[ORM\Column(type: 'boolean', options: ['default' => true])]
-    #[AttributeGroups(['task_read', 'user_section_read', 'task_toggle_active'])]
+    #[AttributeGroups(['task_read', 'section_with_tasks', 'task_toggle_active'])]
     private bool $active = true;
 
     #[ORM\Column]
@@ -37,18 +36,20 @@ class Task
      * @var Collection<int, User>
      */
     #[ORM\ManyToMany(targetEntity: User::class, mappedBy: 'tasks', cascade: ['persist'])]
-    #[AttributeGroups(['task_read','task_users','user_section_read'])]
+    #[AttributeGroups(['task_read', 'section_with_tasks'])]
     private Collection $users;
 
-    #[ORM\ManyToMany(targetEntity: Section::class, mappedBy: 'tasks', cascade: ['persist'])]
-    private Collection $sections;
+    /**
+     * @var Collection<int, SectionHasTasks>
+     */
+    #[ORM\OneToMany(targetEntity: SectionHasTasks::class, mappedBy: 'task', orphanRemoval: true)]
+    private Collection $hasSections;
 
     public function __construct()
     {
         $this->created_at = new \DateTimeImmutable();
         $this->users = new ArrayCollection();
-        $this->sections = new ArrayCollection();
-
+        $this->hasSections = new ArrayCollection();
     }
 
     public function getId(): ?int
@@ -129,28 +130,31 @@ class Task
     }
 
     /**
-     * @return Collection<int, Task>
+     * @return Collection<int, SectionHasTasks>
      */
-    public function getSections(): Collection
+    public function getHasSections(): Collection
     {
-        return $this->sections;
+        return $this->hasSections;
     }
 
-    public function addSection(Section $section): static
+    public function addHasSection(SectionHasTasks $hasSection): static
     {
-        if (!$this->sections->contains($section)) {
-            $this->sections->add($section);
-            $section->addTask($this);
+        if (!$this->hasSections->contains($hasSection)) {
+            $this->hasSections->add($hasSection);
+            $hasSection->setTask($this);
         }
 
         return $this;
     }
 
-    public function removeSection(Section $section): static
+    public function removeHasSection(SectionHasTasks $hasSection): static
     {
-        $this->sections->removeElement($section); 
-            $section->removeTask($this);
-       
+        if ($this->hasSections->removeElement($hasSection)) {
+            if ($hasSection->getTask() === $this) {
+                $hasSection->setTask(null);
+            }
+        }
+
         return $this;
     }
 }
