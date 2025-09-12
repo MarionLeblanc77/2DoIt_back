@@ -15,17 +15,16 @@ class SectionHasTasks
     private ?int $id = null;
 
     #[ORM\Column(nullable: true)]
-    #[AttributeGroups(['section_with_tasks', 'section_with_tasks_sections'])]
+    #[AttributeGroups(['section_with_tasks'])]
     private ?int $position = null;
 
     #[ORM\ManyToOne(inversedBy: 'hasSections')]
     #[ORM\JoinColumn(nullable: false)]
-    #[AttributeGroups(['section_with_tasks', 'section_with_tasks_sections'])]
+    #[AttributeGroups(['section_with_tasks'])]
     private ?Task $task = null;
 
     #[ORM\ManyToOne(inversedBy: 'hasTasks')]
     #[ORM\JoinColumn(nullable: false)]
-    #[AttributeGroups(['section_with_tasks_sections'])]
 
     private ?Section $section = null;
 

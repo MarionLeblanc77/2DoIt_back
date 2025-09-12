@@ -205,7 +205,7 @@ class TaskController extends AbstractController
 
         $em->flush();
 
-        return $this->json(['success' => 'Task repositionned successfully.', 'tasks and section links' => $updatedTaskAndUserSectionLinks], JsonResponse::HTTP_OK, [], ["groups" => ["section_with_tasks_sections"]]);
+        return $this->json(['success' => 'Task repositionned successfully.'], JsonResponse::HTTP_OK, []);
     }
 
     #[Route('/task/{id<\d+>}', name: 'delete', methods: "DELETE")]
