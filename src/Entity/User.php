@@ -30,7 +30,7 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
      * @var list<string> The user roles
      */
     #[ORM\Column]
-    #[AttributeGroups(['user_read'])]
+    #[AttributeGroups(['user_default'])]
     private array $roles = [];
 
     /**
@@ -48,11 +48,11 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     private ?string $last_name = null;
 
     #[ORM\Column]
-    #[AttributeGroups(['user_read'])]
+    #[AttributeGroups(['user_default'])]
     private ?\DateTimeImmutable $created_at = null;
 
     #[ORM\Column(nullable: true)]
-    #[AttributeGroups(['user_read'])]
+    #[AttributeGroups(['user_default'])]
     private ?\DateTimeImmutable $updated_at = null;
 
     /**

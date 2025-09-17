@@ -1,0 +1,12 @@
+gesdinet_jwt_refresh_token:
+    cookie:
+      enabled: true
+      same_site: none              
+      path: /                     
+      domain: null                
+      http_only: true             
+      secure: true                
+      partitioned: false          
+      remove_token_from_body: true
+
+

@@ -6,7 +6,6 @@ use App\Entity\User;
 use App\Repository\UserRepository;
 use DateTimeImmutable;
 use Doctrine\ORM\EntityManagerInterface;
-use Lexik\Bundle\JWTAuthenticationBundle\Services\JWTTokenManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
@@ -15,8 +14,6 @@ use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
 use Symfony\Component\Serializer\SerializerInterface;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Security\Core\Authentication\Token\Storage\TokenStorageInterface;
-use Symfony\Component\Security\Core\Exception\UserNotFoundException;
-use Symfony\Component\Security\Core\User\UserProviderInterface;
 use Symfony\Component\Serializer\Normalizer\AbstractNormalizer;
 use Symfony\Component\Serializer\Normalizer\AbstractObjectNormalizer;
 use Symfony\Component\Validator\Validator\ValidatorInterface;
@@ -74,32 +71,13 @@ class UserController extends AbstractController
         return $this->json(['success' => 'New account created'], 200);
     }
 
-    #[Route('/login', name: 'login', methods: "POST")]
-    public function login( Request $request, UserProviderInterface $userProvider, JWTTokenManagerInterface $jwtManager, UserPasswordHasherInterface $passwordHasher): JsonResponse
-    {
-        $data = json_decode($request->getContent(), true);
-
-        $email = $data['email'];
-        $password = $data['password'];
-
-        if (!$email || !$password) {
-            return $this->json(['errors' => 'Both email and password are required.'], JsonResponse::HTTP_BAD_REQUEST);
-        }
-
-        try {
-            /** @var User */
-            $user = $userProvider->loadUserByIdentifier($email);
-        } catch (UserNotFoundException $e) {
-            return $this->json(['errors' => 'Email and password do not match.'], JsonResponse::HTTP_UNAUTHORIZED);
-        }
-
-        if (!$passwordHasher->isPasswordValid($user, $password)) {
-            return $this->json(['errors' => 'Email and password do not match.'], JsonResponse::HTTP_UNAUTHORIZED);
-        }
-
-        $token = $jwtManager->create($user);
-            
-        return $this->json(['user' => $user, 'token' => $token], 200, context: ["groups" => ["user_read"]]);
+    #[Route('/user_check', name: 'user_check', methods: "GET")]
+    public function check(): JsonResponse {
+        $user = $this->getUser();
+            if (!$user) {
+        return $this->json(['errors' => 'User not authenticated'], Response::HTTP_UNAUTHORIZED);
+    }
+        return $this->json(['user' => $user], Response::HTTP_OK, [], ["groups" => ["user_read"]]);
     }
 
     #[Route('/user', name: 'edit', methods: "PUT")]
