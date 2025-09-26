@@ -1,3 +1,0 @@
-nelmio_cors:
-    defaults:
-        allow_credentials: true
