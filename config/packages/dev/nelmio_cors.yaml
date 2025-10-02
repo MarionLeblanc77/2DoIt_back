@@ -1,0 +1,7 @@
+nelmio_cors:
+    defaults:
+        allow_credentials: true
+
+    paths:
+        '^/api/':
+            allow_credentials: true
