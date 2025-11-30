@@ -42,15 +42,15 @@ class UserController extends AbstractController
 
         $password = $user->getPassword();
         if (strlen($password) < 12) {
-            $errorReadable[]= 'The password must contains 12 caracters.';
+            $errorReadable[]= 'The password must contains at least 12 characters.';
         }
 
         if (!preg_match('/[A-Z]/', $password)) {
-            $errorReadable[]= 'The password must contains an uppercase caracter.';
+            $errorReadable[]= 'The password must contains at least an uppercase character.';
         }
 
         if (!preg_match('/[\W]/', $password)) {
-            $errorReadable[]= 'The password must contains a special caracter.';
+            $errorReadable[]= 'The password must contains at least a special character.';
         }
         
         $user->setPassword($passwordHasher->hashPassword($user, $password));

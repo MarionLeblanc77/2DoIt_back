@@ -4,6 +4,7 @@ body {
 }
 
 .container{
+    text-align: center;
     background-color: white;
     border-radius: 8px;
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
@@ -34,9 +35,11 @@ button {
     touch-action: manipulation;
     cursor: pointer;  
     padding: 6px 14px;
+    margin-top: 1rem;
     background-color: white;
     border-radius: 8px;
     box-shadow: 0px 0.5px 2px 1px rgba(0, 0, 0, 0.1);
+    font-size: 1rem;;
     &:active {
         box-shadow: inset -2px -2px 5px rgba(0, 0, 0, 0.1),
         inset 2px 2px 5px rgba(0, 0, 0, 0.1);
@@ -44,6 +47,20 @@ button {
     }
 }
 
+.field {
+  margin-top: 1rem;
+}
+
 #reset_password_request_form_email {
     margin-left: 0.5rem;
+}
+
+.alert-danger {
+    margin: 1rem auto;
+    padding: 0.3rem 0.5rem;
+    background-color: rgba(240, 128, 128, 0.418);
+    color: rgb(192, 2, 2);
+    border-radius: 8px;
+    font-size: 0.8rem;
+    width: fit-content;
 }
