@@ -109,21 +109,27 @@ class ResetPasswordController extends AbstractController
         $form = $this->createForm(ChangePasswordFormType::class);
         $form->handleRequest($request);
 
-        if ($form->isSubmitted() && $form->isValid()) {
-            // A password reset token should be used only once, remove it.
-            $this->resetPasswordHelper->removeResetRequest($token);
+        if ($form->isSubmitted()) {
+            if ($form->isValid()) {
+                // A password reset token should be used only once, remove it.
+                $this->resetPasswordHelper->removeResetRequest($token);
 
-            /** @var string $plainPassword */
-            $plainPassword = $form->get('plainPassword')->getData();
+                /** @var string $plainPassword */
+                $plainPassword = $form->get('plainPassword')->getData();
 
-            // Encode(hash) the plain password, and set it.
-            $user->setPassword($passwordHasher->hashPassword($user, $plainPassword));
-            $this->entityManager->flush();
+                // Encode(hash) the plain password, and set it.
+                $user->setPassword($passwordHasher->hashPassword($user, $plainPassword));
+                $this->entityManager->flush();
 
-            // The session is cleaned up after the password has been changed.
-            $this->cleanSessionAfterReset();
+                // The session is cleaned up after the password has been changed.
+                $this->cleanSessionAfterReset();
 
-            return $this->redirect($parameterBag->get('app.frontend_url'));
+                return $this->redirect($parameterBag->get('app.frontend_url'));
+            } else {
+                foreach ($form->getErrors(true) as $error) {
+                    $this->addFlash('reset_password_error', $error->getMessage());
+                }
+            }
         }
 
         return $this->render('reset_password/reset.html.twig', [
