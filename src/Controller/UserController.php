@@ -179,6 +179,4 @@ class UserController extends AbstractController
 
         return $this->json(['success' => "User's contact deleted successfully.", 'usersContact'=> $activeUser->getUsers()], Response::HTTP_OK, [], ["groups" => ["user_contacts"]]);
     }
-
-
 }
